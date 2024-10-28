@@ -227,7 +227,7 @@ async function __wbg_init(module_or_path) {
     }
 
     if (typeof module_or_path === 'undefined' && typeof script_src !== 'undefined') {
-        module_or_path = script_src.replace(/\.js$/, '_bg.wasm');
+        module_or_path = "gecko/" + script_src.replace(/\.js$/, '_bg.wasm');
     }
     const imports = __wbg_get_imports();
 
