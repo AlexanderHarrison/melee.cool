@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Overlay Creator</title>
     <style>
+        @media (min-width: 600px) {
+            body {
+                max-width: 800px;
+                padding: 10px;
+                margin: 0 auto;
+            }
+        }
         table, th, td {
             border: 1px solid black;
             border-collapse: collapse;
@@ -117,7 +124,14 @@
 
             if (states.length > 0) {
                 const str = create_overlay_code(states, colours);
-                const code = document.getElementById('gecko-code').innerText = str;
+                const code_ele = document.getElementById('gecko-code');
+                const code = code_ele.innerText = str;
+
+                var range = document.createRange()
+                range.selectNodeContents(code_ele);
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
             }
         }
 
