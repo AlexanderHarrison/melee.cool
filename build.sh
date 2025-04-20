@@ -1,8 +1,8 @@
 
 #!/bin/bash
 
-rm -r build
-cp -r src/ build/
+rm -r build/*
+cp -r src/* build/
 
 cd src
 for i in $(find . -name \*.html); do
