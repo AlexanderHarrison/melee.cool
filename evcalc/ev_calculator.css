@@ -1,0 +1,108 @@
+@import "/theme.css";
+
+body {
+    background: var(--bg);
+    font-family: sans-serif;
+    color: var(--fg);
+    
+    max-width: 800pt;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5; 
+}
+
+#app {
+    display:flex;
+}
+#options { 
+    width: 40%;
+}
+#valuegrid {
+    width: 40%;
+}
+
+#calculated {
+    width: 20%;
+}
+
+.title {
+    padding: 10px;
+    display:inline-block;
+}
+
+.vgp1name {
+    writing-mode:vertical-rl;
+    line-height:35px;
+    width: 35px;
+    vertical-align: text-top;
+    padding-top:10px;
+    margin-top: 1px;
+    padding-bottom:10px;
+}
+
+.vgrow {
+    height: 35px;
+    display:flex;
+}
+
+.vgp2name {
+    padding-left:10px;
+    padding-right:10px;
+    line-height:35px;
+}
+
+.playercheck {
+    width:35px;
+    height:35px;
+    align-content: center;
+}
+
+.valuespot, .valuespotbottom, .valuespotright {
+    line-height:33px;
+    width:33px;
+    display: inline-block;
+    height:34px;
+    font-size: 12px;
+    border: 1px solid black;
+    align-content: center;
+    text-align: center;
+}
+
+.valuespotbottom {
+    border-top: 3px solid black;
+    padding-top: 3px;
+}
+
+.valuespotright {
+    border-left: 3px solid black;
+}
+
+.p1colour {
+    color: var(--bg);
+    background-color: var(--p1);
+}
+
+.p2colour {
+    color: var(--bg);
+    background-color: var(--p2);
+}
+
+button,
+input[type="number"],
+input[type="text"],
+input[type="range"] {
+  background-color: #515151;
+  color: #cccccc;
+  border-color: #393939;
+}
+
+input[type="range"]::-mox-range-progress {
+input[type="range"]::-webkit-slider-thumb {
+  background-color: #6699cc;
+}
+
+input[type="range"]::-moz-range-track {
+input[type="range"]::-webkit-slider-runnable-track {
+  background-color: #515151;
+}

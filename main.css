@@ -1,9 +1,4 @@
-:root {
-    --fg: #d5d8d6;
-    --bg: #282a2e;
-    --hl: #a0a0d0;
-    --hl-dim: #8080a0
-}
+@import "/theme.css";
 
 body {
     background: var(--bg);

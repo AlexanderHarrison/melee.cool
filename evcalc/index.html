@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+    <title>EV Calculator</title>
+    <link rel="stylesheet" href="/main.css">
+    <link rel="stylesheet" href="ev_calculator.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+<body>
+<script src=/header.js></script>
+<h1 class=title>Expected Value Calculator</h1>
+
+<div id="app">
+    <div id="options">
+        <b class="title p1colour">Player 1 options:</b>
+        <options pnum=1></options>
+        <br>
+        <br>
+        <b class="title p2colour">Player 2 options:</b>
+        <options pnum=2></options>
+        <br>
+        <br>
+        <b class="title">Value grid:</b>
+        <valuegrid>
+            <template v-slot:mid="{p1optid, p2optid}">
+                <playercheck :p1optid='p1optid' :p2optid='p2optid'></playercheck>
+            </template>
+        </valuegrid>
+    </div>
+    <div id="valuegrid">
+        <b class="title">Outcome value grid</b>
+        <valuegrid>
+            <template v-slot:mid="{p1optid, p2optid}">
+                <valuespot :p1optid='p1optid' :p2optid='p2optid'></valuespot>
+            </template>
+            <template v-slot:end="{pnum, optid}">
+                <valuesumspot :pnum='pnum' :optid='optid'></valuesumspot>
+            </template>
+        </valuegrid>
+        <br>
+        <br>
+        <b class="title">Scaled outcome value grid</b>
+        <valuegrid>
+            <template v-slot:mid="{p1optid, p2optid}">
+                <scaledvaluespot :p1optid='p1optid' :p2optid='p2optid'></scaledvaluespot>
+            </template>
+            <template v-slot:end="{pnum, optid}">
+                <scaledvaluesumspot :pnum='pnum' :optid='optid'></valuesumspot>
+            </template>
+        </valuegrid>
+    </div>
+    <div id="calculated">
+        <b class="title">Values:</b>
+        <values></values>
+    </div>
+</div>
+<script src="calc.js"></script>
+</body>
+</html>
