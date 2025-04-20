@@ -1,0 +1,62 @@
+:root {
+    --fg: #d5d8d6;
+    --bg: #282a2e;
+    --hl: #a0a0d0;
+    --hl-dim: #8080a0
+}
+
+body {
+    background: var(--bg);
+    font-family: sans-serif;
+    color: var(--fg);
+    max-width: 600pt;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5; 
+}
+
+table, th, td {
+    border: 1px solid var(--hl-dim);
+    border-collapse: collapse;
+    padding: 8px;
+}
+
+th, td {
+    text-align: center;
+}
+
+header {
+    padding-top: 5pt;
+    display: flex;
+}
+
+spaced {
+    display: inline;
+    margin-right: 10pt;
+}
+
+.title {
+    text-align: center;
+}
+
+a {
+    color: var(--hl);
+}
+
+a:visited {
+    color: var(--hl-dim);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 30pt;
+    color: var(--hl);
+}
+
+h1 {
+    text-align; center;
+}
+
+h2, h3, h4, h5, h6 {
+    margin-left: 50pt;
+}

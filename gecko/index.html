@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/main.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<title>Overlay Creator</title>
+
+<body>
+
+    <header>
+<spaced><a href="/index.html">melee.cool</a></spaced>
+<spaced><a href="/gecko/index.html">Gecko Code Overlays</a></spaced>
+</header>
+
+
+    <h2>Bare Minimum Gecko Code Overlay Creator</h2>
+    <p>This is just the beginning - but the hard part is done. Much more coming very soon!</p>
+    <p>Written by <a href="https://www.patreon.com/rwing_aitch">Aitch</a>. Enjoy!</p>
+
+    <button onclick="addRow()">Add Row</button>
+    <button onclick="makeCode()">Create Gecko Code</button>
+
+    <p>
+
+    <table id="dynamicTable">
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Colour</th>
+                <th>❌</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <br>
+
+    <span id="gecko-code">
+    </span>
+
+    <datalist id="states">
+        <option value="wait">
+        <option value="airborne">
+        <option value="dash">
+    </datalist>
+
+    <datalist id="colours">
+        <option value="red">
+        <option value="green">
+        <option value="blue">
+        <option value="yellow">
+        <option value="white">
+        <option value="black">
+    </datalist>
+
+    <script src='/gecko/gecko_maker_wasi.js'></script>
+
+    <script>
+        addRow();
+
+        const { create_overlay_code } = wasm_bindgen;
+        async function run() { await wasm_bindgen(); }
+        run();
+
+        colour_map = {
+            red: 0xFF1414B4,
+            green: 0x14FF14B4,
+            blue: 0x1414FFB4,
+            yellow: 0xDCDC14B4,
+            white: 0xFFFFFFB4,
+            black: 0x141414B4,
+        };
+
+        state_map = {
+            wait: [14, 15, 16, 17, 18],
+            airborne: [25, 26, 27, 28, 29, 30, 31, 32, 33, 34],
+            dash: [20],
+        };
+
+        function makeCode() {
+            const table = document.getElementById('dynamicTable').getElementsByTagName('tbody')[0];
+
+            var states = [];
+            var colours = [];
+
+            for (let i = 0, row; row = table.rows[i]; i++) {
+                let state_str = row.cells[0].firstElementChild.value;
+                if (state_str === "") { continue; }
+
+                let state_ids = state_map[state_str];
+                if (state_ids === undefined) {
+                    const code = document.getElementById('gecko-code').innerText = "Error: invalid state '" + state_str + "'";
+                    return;
+                }
+
+                let colour_str = row.cells[1].firstElementChild.value;
+                if (colour_str === "") { 
+                    const code = document.getElementById('gecko-code').innerText = "Error: no colour set for state '" + state_str + "'";
+                    return;
+                }
+
+                let colour = colour_map[colour_str];
+                if (colour === undefined) {
+                    const code = document.getElementById('gecko-code').innerText = "Error: invalid colour '" + colour + "'";
+                    return;
+                }
+
+                for (let j = 0; j < state_ids.length; j++) {
+                    states.push(state_ids[j]);
+                    colours.push(colour);
+                }
+            }
+
+            if (states.length > 0) {
+                const str = create_overlay_code(states, colours);
+                const code_ele = document.getElementById('gecko-code');
+                const code = code_ele.innerText = str;
+
+                var range = document.createRange()
+                range.selectNodeContents(code_ele);
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+        }
+
+        function addRow() {
+            const table = document.getElementById('dynamicTable').getElementsByTagName('tbody')[0];
+            const newRow = table.insertRow();
+
+            let cell1 = newRow.insertCell(0);
+            let input1 = document.createElement('input');
+            input1.setAttribute('type', 'search');
+            input1.setAttribute('list', 'states');
+            input1.setAttribute('placeholder', 'Choose a state');
+            cell1.appendChild(input1)
+
+            let cell2 = newRow.insertCell(1);
+            let input2 = document.createElement('input');
+            input2.setAttribute('type', 'search');
+            input2.setAttribute('list', 'colours');
+            input2.setAttribute('placeholder', 'Choose a colour');
+            cell2.appendChild(input2)
+
+            let cell3 = newRow.insertCell(2);
+            let removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.onclick = function() {
+                removeRow(this);
+            };
+            cell3.appendChild(removeBtn);
+        }
+
+        function removeRow(button) {
+            // Find the row the button is in and remove it
+            const row = button.parentElement.parentElement;
+            row.parentElement.removeChild(row);
+        }
+    </script>
+</body>
+</html>
