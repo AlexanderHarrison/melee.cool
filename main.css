@@ -4,17 +4,24 @@ body {
     background: var(--bg);
     font-family: sans-serif;
     color: var(--fg);
-    max-width: 600pt;
-    width: 100%;
+    max-width: 500pt;
     margin-left: auto;
     margin-right: auto;
     line-height: 1.5; 
+}
+
+p {
+  margin-bottom: 1.5em;
 }
 
 table, th, td {
     border: 1px solid var(--hl-dim);
     border-collapse: collapse;
     padding: 8px;
+}
+
+hr {
+    color: var(--hl-dim);
 }
 
 th, td {
@@ -41,16 +48,4 @@ a {
 
 a:visited {
     color: var(--hl-dim);
-}
-
-h1, h2, h3, h4, h5, h6 {
-    color: var(--hl);
-}
-
-h1 {
-    text-align; center;
-}
-
-h2, h3, h4, h5, h6 {
-    margin-left: 50pt;
 }
