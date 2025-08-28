@@ -14,6 +14,10 @@ p {
   margin-bottom: 1.5em;
 }
 
+li {
+    padding-bottom: 8px;
+}
+
 table, th, td {
     border: 1px solid var(--hl-dim);
     border-collapse: collapse;
