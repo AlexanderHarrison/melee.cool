@@ -57,9 +57,13 @@ spaced {
     text-align: center;
 }
 
-.download-link {
+.centred-link {
     padding: 20px;
     text-align: center;
+}
+
+.inline-icon {
+    vertical-align: middle;
 }
 
 a {

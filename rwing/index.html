@@ -18,16 +18,17 @@ rwing is an advanced replay viewer for Super Smash Bros. Melee.
 <p><img src=overview-game.png />
 
 <p>
-With rwing, you can easily browse and watch back your SLP replay files.
-Review tournament vods for mistakes.
-Study top-level gameplay vods.
-Export missed combos as UnclePunch Training Mode savestates.
-Share annoted vods with students.
+With rwing, you can easily browse and watch back your SLP replay files,
+review tournament vods for mistakes,
+study top-level gameplay vods,
+export missed combos as UnclePunch Training Mode savestates,
+share annoted vods with students,
+and much more!
 
 <p>
 Available for windows, linux, and macos!
 
-<h2 class=download-link><a href="https://patreon.com/rwing_aitch">Download rwing on my patreon</a></h2>
+<h2 class=centred-link><a href="https://patreon.com/rwing_aitch">Download rwing on my patreon</a></h2>
 
 <h1>Features</h1>
 
@@ -50,12 +51,12 @@ Available for windows, linux, and macos!
 </ul>
 
 <!-- ------------------------------- OVERVIEW ----------------------------- -->
-<h1 id=quickstart>Overview</h1>
+<!-- <h1 id=quickstart>Overview</h1> --> 
 
 <!-- ------------------------------- FILTERING ----------------------------- -->
 <h1 id=search>Filtering Replays</h1>
 
-In rwing you can filter thousands of slp files instantly.
+Rwing can filter through thousands of slp files instantly.
 Filter by tag, slippi connect code, character, stage, and singles/teams.
 
 <p><video src=filter-pessi.mp4 autoplay loop muted type=video/mp4 />
@@ -72,9 +73,32 @@ You can open the files filter anywhere with View→Files Filter.
 
 <h1 id=export>UnclePunch's Training Mode Exports</h1>
 
+<h3 class=centred-link><a href="/rwing/setup">Here's a guide on setting up TM Exports</a></h3>
+
+<p>
 You can export any moment in your games as a Training Mode savestate.
 This makes practicing your mistakes simple.
 You can start to fix any issue with your play immediately.
+
+<p>
+To export a situation, press the
+<svg class="inline-icon" xmlns="http://www.w3.org/2000/svg" viewBox="-1.5 -1.5 3 3.5" width="19" height="19">
+  <path
+    d="M -1.2 -1.2 L -0.4 -1.2
+       M -0.8 -1.2 L -0.8 0.0
+       M 0.0 0.0 L 0.0 -1.2 L 0.6 0.0 L 1.2 -1.2 L 1.2 0.0
+       M 0.0 0.6 L 0.0 1.3
+       M 0.0 0.6 L 0.4 1.0
+       M 0.0 0.6 L -0.4 1.0
+       M -1.2 1.5 L 1.2 1.5"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="0.25"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
+button in the game controls.
 
 <p><video src=export-export.mp4 autoplay loop muted type=video/mp4 />
 
@@ -82,24 +106,47 @@ You can start to fix any issue with your play immediately.
 
 <p><video src=export-import.mp4 autoplay loop muted type=video/mp4 />
 
+<!-- ------------------------------- NOTES AND DIAGRAMS ----------------------------- -->
 <h1 id=notes>Notes and Diagrams</h1>
+
+You can write notes and draw diagrams for moments in your games.
+These will be saved into the slp file.
+This means that you can easily share these with students or teammates.
+
+<!-- ------------------------------- TIMELINE ----------------------------- -->
 <h1 id=timeline>Timeline</h1>
+
+<!-- ------------------------------- SLP COMPRESSION ----------------------------- -->
 <h1 id=compress>Slp Compression</h1>
+
+<!-- ------------------------------- COMBO FINDER ----------------------------- -->
 <h1 id=combo-finder>Combo Finder</h1>
+
+<!-- ------------------------------- RECORDING MANAGEMENT ----------------------------- -->
 <h1 id=recordings>Recording Management</h1>
+
+<!-- ------------------------------- PLAYLISTS ----------------------------- -->
 <h1 id=playlists>Watch and Edit Playlists</h1>
+
+<!-- ------------------------------- LAYOUT ----------------------------- -->
 <h1 id=layout>Modify and Save Layouts</h1>
+
+<!-- ------------------------------- CUSTOMIZATION ----------------------------- -->
 <h1 id=customization>Customization</h1>
 <h3>Theming</h3>
 <h3>Hotkeys</h3>
 
+<!-- ------------------------------- OSDS AND OVERLAYS ----------------------------- -->
 <h1 id=osds>OSDs and Overlays</h1>
 <h3>Wavedash</h3>
 <h3>Frame Advantage</h3>
 <h3>Actionable</h3>
 <h3>Missed L-Cancels</h3>
 
+<!-- ------------------------------- HITBOXES ----------------------------- -->
 <h1 id=hitboxes>Hitboxes</h1>
+
+<!-- ------------------------------- SCREENSHOTS ----------------------------- -->
 <h1 id=screenshots>Take Screenshots</h1>
 
 </body>
@@ -116,9 +163,12 @@ var observer = new IntersectionObserver(
         }
     })
 );
+
 const videos = document.querySelectorAll('video');
 videos.forEach(video => {
-    video.pause(); // start playing - if js is supported then we pause and only play on entering viewport
+    // video are marked autoplay. This is so people without JS can watch the videos.
+    // If they have JS, then we can pause them and then start them when they enter the viewport.
+    video.pause(); 
     observer.observe(video);
 });
 </script>
