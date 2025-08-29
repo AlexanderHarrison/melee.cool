@@ -10,7 +10,18 @@ body {
     line-height: 1.5; 
 }
 
-p {
+img {
+    width: 100%;
+    display: block;
+}
+
+video {
+    width: 100%;
+    display: block;
+}
+
+p, ul {
+  margin-top: 1.5em;
   margin-bottom: 1.5em;
 }
 
@@ -46,8 +57,18 @@ spaced {
     text-align: center;
 }
 
+.download-link {
+    padding: 20px;
+    text-align: center;
+}
+
 a {
     color: var(--hl);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
 }
 
 a:visited {

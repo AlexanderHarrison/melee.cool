@@ -13,29 +13,75 @@
 <h1 class=title>rwing</h1>
 
 <p>
-
 rwing is an advanced replay viewer for Super Smash Bros. Melee.
-Easily browse and watch back your SLP replay files.
+
+<p><img src=overview-game.png />
+
+<p>
+With rwing, you can easily browse and watch back your SLP replay files.
+Review tournament vods for mistakes.
+Study top-level gameplay vods.
+Export missed combos as UnclePunch Training Mode savestates.
+Share annoted vods with students.
+
+<p>
+Available for windows, linux, and macos!
+
+<h2 class=download-link><a href="https://patreon.com/rwing_aitch">Download rwing on my patreon</a></h2>
+
+<h1>Features</h1>
 
 <ul>
     <li><a href=#search>        Search and filter through thousands of slp files instantly</a>
     <li><a href=#export>        Export UnclePunch's training mode savestates</a>
     <!--<li><a href=#improover>     Improover: Export training mode savestates on a button press</a>-->
-    <li><a href=#notes>         Create and save notes and diagrams</a>
-    <li><a href=#timeline>       View a featureful timeline of the game</a>
+    <li><a href=#notes>         Create notes and diagrams that save into the replay</a>
+    <li><a href=#timeline>      Explore a featureful game timeline</a>
     <li><a href=#compress>      Compress your slp files to 1/10th the size</a>
+    <li><a href=#hitboxes>      View hitboxes</a>
+    <li><a href=#osds>          Find missed wavedashes, actionable moments, and more</a>
     <li><a href=#combo-finder>  Quickly and easily find combos</a>
     <li><a href=#recordings>    Browse, delete, and rename your TM savestates</a>
     <li><a href=#playlists>     View and modify Clippi playlists</a>
+    <li><a href=#screenshot>    Take screenshots of the game with your diagrams</a>
     <li><a href=#layout>        Change panel layout to show info where you need it</a>
     <li><a href=#customiation>  Customize theming and hotkeys</a>
-    <li><a href=#osds>          Find missed wavedashes, actionable moments, and more</a>
-    <li><a href=#hitboxes>      View hitboxes</a>
-    <li><a href=#screenshot>    Take screenshots of the game with your diagrams</a>
+    <li>And more!
 </ul>
 
+<!-- ------------------------------- OVERVIEW ----------------------------- -->
+<h1 id=quickstart>Overview</h1>
+
+<!-- ------------------------------- FILTERING ----------------------------- -->
 <h1 id=search>Filtering Replays</h1>
+
+In rwing you can filter thousands of slp files instantly.
+Filter by tag, slippi connect code, character, stage, and singles/teams.
+
+<p><video src=filter-pessi.mp4 autoplay loop muted type=video/mp4 />
+
+<p>
+You can also mark special games with a star to find them easier,
+and filter for games that you have annotated.
+
+<p><video src=filter-notes.mp4 autoplay loop muted type=video/mp4 />
+
+<p>
+You can open the files filter anywhere with View→Files Filter.
+<p><video src=filter-toggle.mp4 autoplay loop muted type=video/mp4 />
+
 <h1 id=export>UnclePunch's Training Mode Exports</h1>
+
+You can export any moment in your games as a Training Mode savestate.
+This makes practicing your mistakes simple.
+You can start to fix any issue with your play immediately.
+
+<p><video src=export-export.mp4 autoplay loop muted type=video/mp4 />
+
+<p>Then, you can open the savestate in Training Mode to practice.
+
+<p><video src=export-import.mp4 autoplay loop muted type=video/mp4 />
+
 <h1 id=notes>Notes and Diagrams</h1>
 <h1 id=timeline>Timeline</h1>
 <h1 id=compress>Slp Compression</h1>
@@ -57,4 +103,23 @@ Easily browse and watch back your SLP replay files.
 <h1 id=screenshots>Take Screenshots</h1>
 
 </body>
+
+<script>
+// offscreen videos normally keep playing and this hurts my cpu,
+// so we pause videos if they are offscreen.
+var observer = new IntersectionObserver(
+    (entries, observer) => entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.play();
+        } else {
+            entry.target.pause();
+        }
+    })
+);
+const videos = document.querySelectorAll('video');
+videos.forEach(video => {
+    video.pause(); // start playing - if js is supported then we pause and only play on entering viewport
+    observer.observe(video);
+});
+</script>
 </html>
