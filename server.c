@@ -30,7 +30,7 @@ void mg_print_str(const char *preface, struct mg_str str) {
     printf("%s%.*s\n", preface, (int) str.len, str.buf);
 }
 
-#define REPLYSIZE (10)
+#define REPLYSIZE (1024*1024)
 static Str reply;
 static const char *reply_headers = "Content-Type: text/html; charset=utf-8\r\n";
 
