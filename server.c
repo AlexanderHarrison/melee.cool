@@ -6,6 +6,8 @@
 #include <time.h>
 
 #include "vendor/hescape.h"
+
+#define MG_TLS MG_TLS_BUILTIN
 #include "vendor/mongoose.h"
 
 typedef double F64;
