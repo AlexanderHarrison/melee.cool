@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/main.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clip Dump</title>
+    <script src="/htmx.js"></script>
+</head>
+<body>
+
+<script src=/header.js></script>
+
+<h1 class=title>Clip Dump</h1>
+<div id=clips></div>
+
+<div id="post">
+    <form hx-post="/post-clip" hx-swap="none">
+        <label for="metadata">Link:</label>
+        <input type="text" id="metadata" name="metadata"/><br>
+        
+        <label for="tag1">Tag 1:</label><input type="text" id="tag1" name="tag1"/><br>
+        <label for="tag2">Tag 2:</label><input type="text" id="tag2" name="tag2"/><br>
+        <label for="tag3">Tag 3:</label><input type="text" id="tag3" name="tag3"/><br>
+        
+        <input type="submit" value="Post" />
+        <div id="result"></div>
+    </form>
+</div>
+
+</body>
+</html>
