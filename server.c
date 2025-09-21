@@ -134,7 +134,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
     } else if (ev == MG_EV_ACCEPT) {
         struct mg_tls_opts opts = {
             .cert = mg_unpacked("certs/domain.cert.pem"),
-            .key = mg_unpacked("certs/public.key.pem")
+            .key = mg_unpacked("certs/private.key.pem")
         };
         mg_tls_init(c, &opts);
     }
