@@ -9,12 +9,12 @@ else
     BASE_FLAGS="-ggdb"
 fi
 PATH_FLAGS="-I/usr/include -I/usr/lib -I/usr/local/lib -I/usr/local/include"
-LINK_FLAGS=""
+LINK_FLAGS="-lssl -lcrypto"
 
 mkdir -p build
 
 if [ ! -f build/mongoose.o ]; then
-    /usr/bin/gcc -c -O2 vendor/mongoose.c -o build/mongoose.o
+    /usr/bin/gcc -DMG_TLS=MG_TLS_OPENSSL -c -O2 vendor/mongoose.c -o build/mongoose.o
 fi
 if [ ! -f build/hescape.o ]; then
     /usr/bin/gcc -c -O2 vendor/hescape.c -o build/hescape.o
