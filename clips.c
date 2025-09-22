@@ -216,7 +216,9 @@ static void init_clip_tables(void) {
     tag_strings = calloc(METASIZE, sizeof(*tag_strings));
 }
 
-/*static void create_entries(U32 count, U32 tag_count) {
+// populate db for testing
+__attribute__((unused))
+static void create_entries(U32 count, U32 tag_count) {
     char metabuf[16] = "entry ";
     char tagbuf[3] = { 0 };
     U32 rng = 0x67236;
@@ -227,22 +229,22 @@ static void init_clip_tables(void) {
             metabuf[6 + j] = 'a' + (char)(n >> 28);
             n <<= 4;
         }
-
-        EntryIdx entry = create_entry(metabuf);
+        
+        Str metadata = { metabuf, 6 + 8 };
+        EntryIdx entry = create_entry(metadata);
         
         for (U32 j = 0; j < tag_count; ++j) {
             rng = hash_bytes((void*)&rng, sizeof(rng));
             tagbuf[0] = 'a' + (char)((rng >> 4) & 0xf);
             tagbuf[1] = 'a' + (char)((rng >> 8) & 0xf);
-            
-            if (tagbuf[0] == 'b' && (rng & 1))
-                tagbuf[0] = 'a';
-            tag_entry(entry, tagbuf);
+
+            Str tag = { tagbuf, 2 };
+            tag_entry(entry, tag);
         }
     }
 }
 
-int main(void) {
+/*int main(void) {
     init_clip_tables();
     
     timer_start();
