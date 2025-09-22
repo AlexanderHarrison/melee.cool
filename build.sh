@@ -14,7 +14,7 @@ LINK_FLAGS=""
 mkdir -p build
 
 if [ ! -f build/mongoose.o ]; then
-    /usr/bin/gcc -DMG_TLS=MG_TLS_BUILTIN -c -O2 vendor/mongoose.c -o build/mongoose.o
+    /usr/bin/gcc -c -O2 vendor/mongoose.c -o build/mongoose.o
 fi
 if [ ! -f build/hescape.o ]; then
     /usr/bin/gcc -c -O2 vendor/hescape.c -o build/hescape.o

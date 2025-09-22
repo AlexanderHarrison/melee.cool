@@ -6,8 +6,6 @@
 #include <time.h>
 
 #include "vendor/hescape.h"
-
-#define MG_TLS MG_TLS_BUILTIN
 #include "vendor/mongoose.h"
 
 typedef double F64;
@@ -131,12 +129,6 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 reply_send(c);
             }
         }
-    } else if (ev == MG_EV_ACCEPT) {
-        struct mg_tls_opts opts = {
-            .cert = mg_unpacked("certs/domain.cert.pem"),
-            .key = mg_unpacked("certs/private.key.pem")
-        };
-        mg_tls_init(c, &opts);
     }
 }
 
@@ -147,7 +139,8 @@ int main(void) {
     struct mg_mgr mgr;
     mg_mgr_init(&mgr);
     
-    mg_http_listen(&mgr, "https://0.0.0.0:10000", ev_handler, NULL);
+    mg_http_listen(&mgr, "http://0.0.0.0:10000", ev_handler, NULL);
+
     while (true)
         mg_mgr_poll(&mgr, -1);
     mg_mgr_free(&mgr);
