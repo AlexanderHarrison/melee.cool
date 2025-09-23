@@ -355,6 +355,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
             }
             else if (mg_match(hm->uri, mg_str("/post-clip"), NULL)) {
                 Str metadata = mg_http_var(hm->body, mg_str("metadata"));
+                decode_uri(&metadata);
                 EntryIdx entry = create_entry(metadata);
                 mg_print_str("- Added entry: \n", metadata);
                 
@@ -398,7 +399,7 @@ int main(void) {
     struct mg_mgr mgr;
     mg_mgr_init(&mgr);
     
-    // mg_http_listen(&mgr, "http://0.0.0.0:8000", ev_handler, NULL);
+    mg_http_listen(&mgr, "http://0.0.0.0:8000", ev_handler, NULL);
     mg_http_listen(&mgr, "http://0.0.0.0:80", ev_handler, NULL);
     mg_http_listen(&mgr, "https://0.0.0.0:443", ev_handler, NULL);
 
