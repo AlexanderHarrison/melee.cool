@@ -22,6 +22,15 @@
     </form>
 </div>
 
+<br>
+
+<div id="pages">
+    <button onclick="find_clips('idx-a', true);">Prev Page</button>
+    <button onclick="find_clips('idx-b', false);">Next Page</button>
+</div>
+
+<br>
+
 <div id="post">
     <form id="post-form" hx-get="/post-clip" hx-swap="none">
         <label for="post-metadata">Link/Description:</label>
@@ -34,24 +43,25 @@
     </form>
 </div>
 
+<br>
+
 <div id=clips></div>
 
 <script>
-function set_search_tags_from_url() {
+function find_clips(idx_param, reverse) {
     const params = new URLSearchParams(window.location.search);
     const tags = params.get("tags");
+    const idx = params.get(idx_param);
     document.getElementById("search-tags").value = tags;
-    return tags;
+    
+    var values = { };
+    if (tags != null) { values.tags = tags; }
+    if (idx != null) { values.idx = idx; }
+    if (reverse) { values.rev = true; }
+    htmx.ajax('POST', '/find-clips', { swap: "none", values: values });
 }
 
-tags = set_search_tags_from_url();
-// addEventListener("statechange", set_search_tags_from_url)
-
-if (tags == null) {
-    htmx.ajax('POST', '/find-clips', { swap: "none" });
-} else {
-    htmx.ajax('POST', '/find-clips', { swap: "none", values: { tags: tags, initial: "1" } });
-}
+find_clips("idx-a", false);
 </script>
 
 </body>

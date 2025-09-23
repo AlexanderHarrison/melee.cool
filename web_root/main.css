@@ -90,6 +90,17 @@ spaced {
     vertical-align: middle;
 }
 
+.clip {
+    padding-bottom: 10px;
+    line-height: 1.2;
+}
+.tag {
+    display: inline;
+    padding-right: 5px;
+    line-height: 1;
+    font-size: 12px;
+}
+
 a {
     color: var(--hl);
     text-decoration: none;

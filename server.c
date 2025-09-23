@@ -23,6 +23,7 @@ typedef int8_t I8;
 typedef size_t USize;
 typedef ssize_t ISize;
 typedef struct mg_str Str;
+#define countof(A) (sizeof(A) / sizeof(*(A)))
 
 #include "clips.c"
 
@@ -44,7 +45,8 @@ static const char default_reply_headers[] = "Content-Type: text/html; charset=ut
 } while (0)
 
 void reply_headers_push_slice(const char *buf, USize len) {
-    memcpy(reply_headers.buf + reply_headers.len, buf, len);
+    if (reply_headers.len + len <= REPLYSIZE)
+        memcpy(reply_headers.buf + reply_headers.len, buf, len);
     reply_headers.len += len;
 }
 
@@ -58,22 +60,50 @@ void reply_headers_push_slice(const char *buf, USize len) {
 
 void reply_push(const char *str) {
     USize str_len = strlen(str);
-    memcpy(reply.buf + reply.len, str, str_len);
+    if (reply.len + str_len <= REPLYSIZE)
+        memcpy(reply.buf + reply.len, str, str_len);
     reply.len += str_len;
 }
 
 void reply_push_slice(const char *buf, USize len) {
-    memcpy(reply.buf + reply.len, buf, len);
+    if (reply.len + len <= REPLYSIZE)
+        memcpy(reply.buf + reply.len, buf, len);
     reply.len += len;
 }
 
-void reply_clips(EntrySearch *search) {
+void reply_clips(EntrySearch *search, bool reverse_search) {
+    Entry *entries[10];
+    USize entry_count = 0;
+    
+    if (reverse_search) {
+        for (; entry_count != 10; ++entry_count) {
+            Entry *entry = search_prev(search);
+            if (entry == NULL) { break; }
+            entries[entry_count] = entry;
+        }
+        // reverse entry order
+        for (USize i = 0; i < entry_count/2; ++i) {
+            Entry *a = entries[i];
+            Entry *b = entries[entry_count - i - 1];
+            entries[i] = b;
+            entries[entry_count - i - 1] = a;
+        }
+    } else {
+        for (; entry_count != 10; ++entry_count) {
+            Entry *entry = search_next(search);
+            if (entry == NULL) { break; }
+            entries[entry_count] = entry;
+        }
+    }
+
     reply_push_const("<div id=clips hx-swap-oob=true>");
-    for (U32 clip_i = 0; clip_i != 10; ++clip_i) {
-        Entry *entry = search_next(search);
-        if (entry == NULL)
-            break;
-        
+    
+    if (entry_count == 0)
+        reply_push_const("No results");
+    
+    for (U32 entry_i = 0; entry_i != entry_count; ++entry_i) {
+        Entry *entry = entries[entry_i];
+
         reply_push_const("<div class=clip>");
             reply_push_const("<div class=metadata>");
                 const char *metadata = entry_metadata(entry);
@@ -117,6 +147,32 @@ static const char hex_decode_lut[256] = {
     ['A'] = 10, ['B'] = 11, ['C'] = 12, ['D'] = 13, ['E'] = 14, ['F'] = 15,
 };
 
+void format_uint_hex(char buf[8], U32 n) {
+    char *b = buf;
+
+    USize i = 28;
+    while (1) {
+        U32 digit = (n >> i) & 0xF;
+        U32 ch_start = digit < 10 ? '0' : ('A' - 10);
+        char c = (char)(digit + ch_start);
+
+        *b = c;
+        b++;
+        
+        if (i == 0) break;
+        i -= 4;
+    }
+}
+
+U32 parse_uint_hex(Str s) {
+    U32 n = 0;
+    for (U32 l = 0; l < s.len; ++l) {
+        char c = s.buf[l];
+        n = (n << 4) | (U32)hex_decode_lut[c];
+    }
+    return n;
+}
+
 void decode_uri(Str *uri_ptr) {
     char *buf = uri_ptr->buf;
     USize len = uri_ptr->len;
@@ -148,11 +204,30 @@ void decode_uri(Str *uri_ptr) {
     *uri_ptr = (Str) { buf, i_new };
 }
 
-USize split_tags(struct mg_http_message *hm, Str tagbuf[TAGMAX]) {
-    Str tags = mg_http_var(hm->body, mg_str("tags"));
-    mg_print_str("BODY: ", hm->body);
-    decode_uri(&tags);
-    
+USize split_idx(Str idx, U32 idxbuf[TAGMAX]) {
+    USize idx_i = 0;
+    USize idx_count = 0;
+    while (idx_count != TAGMAX) {
+        while (idx_i != idx.len && idx.buf[idx_i] == '-')
+            idx_i++;
+        USize idx_start = idx_i;
+        
+        // find idx end
+        while (idx_i != idx.len && idx.buf[idx_i] != '-')
+            idx_i++;
+        USize idx_end = idx_i;
+        
+        if (idx_end == idx_start)
+            break;
+        
+        Str idx_str = { idx.buf + idx_start, idx_end - idx_start };
+        idxbuf[idx_count++] = parse_uint_hex(idx_str);
+    }
+
+    return idx_count;
+}
+
+USize split_tags(Str tags, Str tagbuf[TAGMAX]) {
     USize tag_i = 0;
     USize tag_count = 0;
     while (tag_count != TAGMAX) {
@@ -195,26 +270,87 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
         else if (mg_match(hm->method, mg_str("POST"), NULL)) {
             if (mg_match(hm->uri, mg_str("/find-clips"), NULL)) {
                 Str tags_str = mg_http_var(hm->body, mg_str("tags"));
-                bool is_initial = mg_http_var(hm->body, mg_str("initial")).len != 0;
+                Str search_idx_str = mg_http_var(hm->body, mg_str("idx"));
+                Str rev_str = mg_http_var(hm->body, mg_str("rev"));
+                bool reverse_search = rev_str.len != 0;
 
-                if (!is_initial) {
-                    reply_headers_push_const("Hx-Push-Url: /clips/?tags=");
-                    reply_headers_push_slice(tags_str.buf, tags_str.len);
-                    reply_headers_push_const("\r\n");
-                } else {
-                    printf("- is initial\n");
-                }
-                
+                mg_print_str("- search idx str: ", search_idx_str);
+                U32 search_idx = parse_uint_hex(search_idx_str);
+                printf("- search idx: %x\n", search_idx);
+
                 EntrySearch search = { 0 };
+                
+                U32 idx[TAGMAX];
+                U32 idx_count = (U32)split_idx(search_idx_str, idx);
+                for (USize i = 0; i < idx_count; ++i)
+                    search.tag_search_idx[i] = idx[i];
+
+                Str tags_str_decoded = mg_strdup(tags_str);
                 Str tags[TAGMAX];
-                USize tag_count = split_tags(hm, tags);
+                decode_uri(&tags_str_decoded);
+                USize tag_count = split_tags(tags_str_decoded, tags);
+                
                 for (USize i = 0; i < tag_count; ++i) {
                     Str tag = tags[i];
                     mg_print_str("- Find tag: ", tag);
                     search_tag(&search, tag);
                 }
 
-                reply_clips(&search);
+                reply_clips(&search, reverse_search);
+                mg_free(tags_str_decoded.buf);
+                
+                reply_headers_push_const("Hx-Push-Url: /clips/?");
+                
+                {
+                    U32 *idx_given = idx;
+                    U32 idx_given_count = idx_count;
+                    
+                    if (reverse_search)
+                        reply_headers_push_const("idx-b=");
+                    else
+                        reply_headers_push_const("idx-a=");
+
+                    for (USize i = 0; i < idx_given_count; ++i) {
+                        if (i) reply_headers_push_const("-");
+
+                        char idx_str[8];
+                        format_uint_hex(idx_str, idx_given[i]);
+                        char *idx_buf = idx_str;
+                        USize idx_len = countof(idx_str);
+                        while (idx_len && *idx_buf == '0') { idx_buf++; idx_len--; }
+                        reply_headers_push_slice(idx_buf, idx_len);
+                    }
+                }
+
+                {
+                    U32 *idx_new = search.tag_search_idx;
+                    U32 idx_new_count = search.tag_count;
+                    if (idx_new_count == 0) idx_new_count = 1;
+
+                    if (reverse_search)
+                        reply_headers_push_const("&idx-a=");
+                    else
+                        reply_headers_push_const("&idx-b=");
+
+                    for (USize i = 0; i < idx_new_count; ++i) {
+                        if (i) reply_headers_push_const("-");
+
+                        char idx_str[8];
+                        format_uint_hex(idx_str, idx_new[i]);
+                        char *idx_buf = idx_str;
+                        USize idx_len = countof(idx_str);
+                        while (idx_len && *idx_buf == '0') { idx_buf++; idx_len--; }
+                        reply_headers_push_slice(idx_buf, idx_len);
+                    }
+                }
+
+                if (tag_count) {
+                    reply_headers_push_const("&tags=");
+                    reply_headers_push_slice(tags_str.buf, tags_str.len);
+                }
+                
+                reply_headers_push_const("\r\n");
+                
                 reply_send(c);
             }
             else if (mg_match(hm->uri, mg_str("/post-clip"), NULL)) {
@@ -222,8 +358,10 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 EntryIdx entry = create_entry(metadata);
                 mg_print_str("- Added entry: \n", metadata);
                 
+                Str tags_str = mg_http_var(hm->body, mg_str("tags"));
+                decode_uri(&tags_str);
                 Str tags[TAGMAX];
-                USize tag_count = split_tags(hm, tags);
+                USize tag_count = split_tags(tags_str, tags);
                 for (USize i = 0; i < tag_count; ++i) {
                     Str tag = tags[i];
                     mg_print_str("- Tagged: ", tag);
@@ -231,7 +369,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 }
                 
                 EntrySearch search = { 0 };
-                reply_clips(&search);
+                reply_clips(&search, false);
                 reply_send(c);
             }
         }
@@ -255,11 +393,12 @@ int main(void) {
     memcpy(reply_headers.buf, default_reply_headers, sizeof(default_reply_headers)-1);
     reply_headers.len = sizeof(default_reply_headers)-1;
 
-    mg_log_set(MG_LL_NONE);
+    mg_log_set(MG_LL_DEBUG);
 
     struct mg_mgr mgr;
     mg_mgr_init(&mgr);
     
+    // mg_http_listen(&mgr, "http://0.0.0.0:8000", ev_handler, NULL);
     mg_http_listen(&mgr, "http://0.0.0.0:80", ev_handler, NULL);
     mg_http_listen(&mgr, "https://0.0.0.0:443", ev_handler, NULL);
 

@@ -168,6 +168,20 @@ static Entry *search_next_tagless(EntrySearch *search) {
     return &entry_table[i];
 }
 
+static Entry *search_prev_tagless(EntrySearch *search) {
+    // Since there are no tags, this is just sorting by newest.
+    // We just use the first search_idx as an index into meta entries.
+    
+    EntryIdx search_i = search->tag_search_idx[0];
+    if (search_i == 0)
+        return NULL;
+    
+    search_i--;
+    search->tag_search_idx[0] = search_i;
+    EntryIdx i = meta_entry_count - search_i - 1;
+    return &entry_table[i];
+}
+
 static Entry *search_next(EntrySearch *search) {
     if (search->tag_count == 0)
         return search_next_tagless(search);
@@ -209,6 +223,60 @@ static Entry *search_next(EntrySearch *search) {
     return &entry_table[idx_min];
 }
 
+static Entry *search_prev(EntrySearch *search) {
+    if (search->tag_count == 0)
+        return search_prev_tagless(search);
+
+    // TODO - when should we binary search instead of linear scan?
+
+    EntryIdx idx_max = 0;
+    
+    U32 tag_count = search->tag_count;
+    
+    // clamp
+    for (USize i = 0; i < tag_count; ++i) {
+        TagEntry *tag_entry = &search->tag_entry[i];
+        U32 tag_entry_count = tag_entry->table_size;
+        if (tag_entry_count == 0)
+            return NULL;
+
+        U32 tag_search_idx = search->tag_search_idx[i];
+        if (tag_search_idx >= tag_entry_count)
+            search->tag_search_idx[i] = tag_entry_count - 1;
+    }
+    
+    USize tag_i = 0;
+    while (1) {
+        TagEntry *tag_entry = &search->tag_entry[tag_i];
+        U32 tag_entry_count = tag_entry->table_size;
+        U32 tag_search_idx = search->tag_search_idx[tag_i];
+        if (tag_search_idx == 0)
+            return NULL;
+
+        U32 tag_entry_idx = tag_entry_count - tag_search_idx - 1;
+        EntryIdx prev_tag_entry = tag_entry->table[tag_entry_idx];
+        
+        if (prev_tag_entry < idx_max) {
+            // try prev entry for this tag
+            search->tag_search_idx[tag_i] -= 1;
+        } else if (prev_tag_entry > idx_max) {
+            // idx_max entry not found for this tag, start again 
+            idx_max = prev_tag_entry;
+            tag_i = 0;
+        } else {
+            // idx_max entry found for this tag, check next tag 
+            tag_i += 1;
+            
+            // return if all tags found for this entry
+            if (tag_i == tag_count) {
+                search->tag_search_idx[0] -= 1;
+                break;
+            }
+        }
+    }
+    return &entry_table[idx_max];
+}
+
 static void init_clip_tables(void) {
     tag_table = calloc(TABLESIZE, sizeof(*tag_table));
     entry_table = calloc(TABLESIZE, sizeof(*entry_table));
@@ -232,7 +300,7 @@ static void create_entries(U32 count, U32 tag_count) {
         
         Str metadata = { metabuf, 6 + 8 };
         EntryIdx entry = create_entry(metadata);
-        
+
         for (U32 j = 0; j < tag_count; ++j) {
             rng = hash_bytes((void*)&rng, sizeof(rng));
             tagbuf[0] = 'a' + (char)((rng >> 4) & 0xf);
