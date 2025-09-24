@@ -143,6 +143,7 @@ void reply_html(Str html) {
 enum embed_mode {
     EMBED_NONE = 0,
     EMBED_YOUTUBE,
+    EMBED_TWITCH_CLIP,
 };
 
 /* 
@@ -150,8 +151,6 @@ enum embed_mode {
     First byte is special:
         low bits  0..4: version (0)
         high bits 4..8: embed mode
-            0: none
-            1: youtube id
     Then follows null terminated strings:
         title
         link
@@ -184,7 +183,12 @@ void reply_metadata(char *buf) {
         reply_push(embed);
         reply_push_const("\"></iframe>");
     }
-    
+    else if (embed_mode == EMBED_TWITCH_CLIP) {
+        const char *embed = link + link_len + 1;
+        reply_push_const("<iframe class=\"clip-embed\" width=400 height=225 allowfullscreen src=\"https://clips.twitch.tv/embed?clip=");
+        reply_push(embed);
+        reply_push_const("&parent=melee.cool\"></iframe>");
+    }
 }
 
 void reply_clips(EntrySearch *search, bool reverse_search) {
@@ -332,7 +336,7 @@ bool possible_xss_in_link(Str link) {
     U64 ok = 1;
     for (USize i = 0; i < link.len; ++i) {
         char c = link.buf[i];
-        ok &= link_char_ok[c >> 6] >> 63;
+        ok &= link_char_ok[c >> 6] >> (c & 63);
     }
     
     return (ok & 1) == 0;
@@ -444,21 +448,23 @@ bool str_contains(Str src, Str find, USize *loc) {
     return false;
 }
 
-// valid youtube video id characters:
+// valid youtube/twitch video id characters:
 // a..z | A..Z | 0..9 | - | _
-static const U64 yt_id_char[4] = { 0x3ff200000000000ULL, 0x7fffffe87fffffeULL, 0, 0 };
+static const U64 id_char_ok[4] = { 0x3ff200000000000ULL, 0x7fffffe87fffffeULL, 0, 0 };
 
 // converts links to embeds if recognized.
 Str convert_link_to_embed_id(Str link, U8 *embed_mode) {
     static const Str youtu_be = ConstStr("youtu.be/");
     static const Str youtube_com = ConstStr("youtube.com/watch?v=");
-    // static const Str twitch_tv = ConstStr("twitch.tv/");
+    static const Str twitch_tv = ConstStr("twitch.tv/");
     // static const Str twitch_video = ConstStr("/videos/");
-    // static const Str twitch_clip = ConstStr("/clip/");
+    static const Str twitch_clip = ConstStr("/clip/");
     
     USize loc;
     Str id = (Str) { 0 };
-
+    
+    // determine embed mode
+    *embed_mode = EMBED_NONE;
     if (str_contains(link, youtu_be, &loc)) {
         *embed_mode = EMBED_YOUTUBE;
         id = (Str) { link.buf + loc + youtu_be.len, 0 };
@@ -466,19 +472,19 @@ Str convert_link_to_embed_id(Str link, U8 *embed_mode) {
     else if (str_contains(link, youtube_com, &loc)) {
         *embed_mode = EMBED_YOUTUBE;
         id = (Str) { link.buf + loc + youtube_com.len, 0 };
-    } else {
-        *embed_mode = EMBED_NONE;
     }
-    // else if (str_contains(link, twitch_tv, &loc)) {
-    //     embed_mode.twitch = true;
-    //     id = { link.buf + loc + youtube_com.len, 0 };
-    // }
+    else if (str_contains(link, twitch_tv, &loc)) {
+        if (str_contains(link, twitch_clip, &loc)) {
+            *embed_mode = EMBED_TWITCH_CLIP;
+            id = (Str) { link.buf + loc + twitch_clip.len, 0 };
+        }
+    }
     
-    if (*embed_mode == 1) {
-        // extract youtube id from link
+    // extract id from link
+    if (*embed_mode == EMBED_YOUTUBE || *embed_mode == EMBED_TWITCH_CLIP) {
         while (link.buf + link.len > id.buf + id.len) {
             char next_char = id.buf[id.len];
-            U64 mask = yt_id_char[next_char >> 6];
+            U64 mask = id_char_ok[next_char >> 6];
             U64 bit = 1ULL << (next_char & 63);
             if (mask & bit) { id.len++; } else { break; }
         }
