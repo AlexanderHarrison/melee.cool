@@ -210,7 +210,7 @@ void reply_metadata(char *buf) {
             reply_push_slice(timestamp, timestamp_len);
         }
         
-        reply_push_const("&parent=melee.cool\"></iframe>");
+        reply_push_const("&autoplay=false&parent=melee.cool\"></iframe>");
     }
     else if (embed_mode == EMBED_TWITCH_VIDEO) {
         reply_push_const("<iframe class=\"clip-embed\" preload=metadata width=400 height=225 allowfullscreen src=\"https://player.twitch.tv/?video=v");
@@ -221,7 +221,7 @@ void reply_metadata(char *buf) {
             reply_push_slice(timestamp, timestamp_len);
         }
         
-        reply_push_const("&parent=melee.cool\"></iframe>");
+        reply_push_const("&autoplay=false&parent=melee.cool\"></iframe>");
     }
 }
 
