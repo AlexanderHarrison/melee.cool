@@ -5,8 +5,6 @@
 #include <string.h>
 #include <time.h>
 
-#include "vendor/hescape.h"
-
 #define MG_TLS MG_TLS_OPENSSL
 #include "vendor/mongoose.h"
 
@@ -71,6 +69,124 @@ void reply_push_slice(const char *buf, USize len) {
     reply.len += len;
 }
 
+char html_char_escape_lut[] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
+    16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 
+    32, 33, 38, 113, 117, 111, 116, 59, 35, 36, 37, 38, 97, 109, 112, 59, 
+    38, 35, 120, 50, 55, 59, 40, 41, 42, 43, 44, 45, 46, 38, 35, 120, 
+    50, 70, 59, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 38, 
+    108, 116, 59, 38, 35, 120, 51, 68, 59, 38, 103, 116, 59, 63, 64, 65, 
+    66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 
+    82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 38, 103, 
+    114, 97, 118, 101, 59, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 
+    108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 
+    124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 
+    140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 
+    156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 
+    172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 
+    188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 
+    204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 
+    220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 
+    236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 
+    252, 253, 254, 255,
+    
+    // pad a little bit for memcpy overread
+    0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+// high 6 bits: string size
+// low 10 bits: offset into html_char_escape_lut to find string
+U16 html_char_size_lut[256] = {
+    1024, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039, 
+    1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1050, 1051, 1052, 1053, 1054, 1055, 
+    1056, 1057, 6178, 1064, 1065, 1066, 5163, 6192, 1078, 1079, 1080, 1081, 1082, 1083, 1084, 6205, 
+    1091, 1092, 1093, 1094, 1095, 1096, 1097, 1098, 1099, 1100, 1101, 1102, 4175, 6227, 4185, 1117, 
+    1118, 1119, 1120, 1121, 1122, 1123, 1124, 1125, 1126, 1127, 1128, 1129, 1130, 1131, 1132, 1133, 
+    1134, 1135, 1136, 1137, 1138, 1139, 1140, 1141, 1142, 1143, 1144, 1145, 1146, 1147, 1148, 1149, 
+    7294, 1157, 1158, 1159, 1160, 1161, 1162, 1163, 1164, 1165, 1166, 1167, 1168, 1169, 1170, 1171, 
+    1172, 1173, 1174, 1175, 1176, 1177, 1178, 1179, 1180, 1181, 1182, 1183, 1184, 1185, 1186, 1187, 
+    1188, 1189, 1190, 1191, 1192, 1193, 1194, 1195, 1196, 1197, 1198, 1199, 1200, 1201, 1202, 1203, 
+    1204, 1205, 1206, 1207, 1208, 1209, 1210, 1211, 1212, 1213, 1214, 1215, 1216, 1217, 1218, 1219, 
+    1220, 1221, 1222, 1223, 1224, 1225, 1226, 1227, 1228, 1229, 1230, 1231, 1232, 1233, 1234, 1235, 
+    1236, 1237, 1238, 1239, 1240, 1241, 1242, 1243, 1244, 1245, 1246, 1247, 1248, 1249, 1250, 1251, 
+    1252, 1253, 1254, 1255, 1256, 1257, 1258, 1259, 1260, 1261, 1262, 1263, 1264, 1265, 1266, 1267, 
+    1268, 1269, 1270, 1271, 1272, 1273, 1274, 1275, 1276, 1277, 1278, 1279, 1280, 1281, 1282, 1283, 
+    1284, 1285, 1286, 1287, 1288, 1289, 1290, 1291, 1292, 1293, 1294, 1295, 1296, 1297, 1298, 1299, 
+    1300, 1301, 1302, 1303, 1304, 1305, 1306, 1307, 1308, 1309, 1310, 1311, 1312, 1313, 1314, 1315,
+};
+
+void reply_html(Str html) {
+    USize escaped_size = 0;
+    for (USize i = 0; i < html.len; ++i)
+        escaped_size += html_char_size_lut[html.buf[i]] >> 10;
+    
+    // +8 so that memcpy overwrite is still in-bounds
+    if (reply.len + escaped_size + 8 > REPLYSIZE) {
+        reply.len += escaped_size;
+    } else {
+        for (USize i = 0; i < html.len; ++i) {
+            char c = html.buf[i];
+            U16 size_and_offset = html_char_size_lut[c];
+            USize size = size_and_offset >> 10;
+            USize offset = size_and_offset & 1023;
+            char *new_chars = &html_char_escape_lut[offset];
+
+            // always copying 8 bytes is wayyyyy faster.
+            // we set the reply len properly anyways, so it's fine.
+            memcpy(&reply.buf[reply.len], new_chars, 8);
+            reply.len += size;
+        }
+    }
+}
+
+
+enum embed_mode {
+    EMBED_NONE = 0,
+    EMBED_YOUTUBE,
+};
+
+/* 
+    metadata format:
+    First byte is special:
+        low bits  0..4: version (0)
+        high bits 4..8: embed mode
+            0: none
+            1: youtube id
+    Then follows null terminated strings:
+        title
+        link
+        embed id (only present if embed mode is nonzero)
+*/
+                
+void reply_metadata(char *buf) {
+    char version = (*buf) >> 4;
+    if (version != 0) {
+        reply_push_const("Cannot parse metadata: Version too new.");
+        return;
+    }
+    char embed_mode = (*buf) & 0xf;
+    
+    char *title = buf + 1;
+    USize title_len = strlen(title);
+    
+    char *link = title + title_len + 1;
+    USize link_len = strlen(link);
+    
+    reply_push_const("<a class=title href=\"");
+    reply_push_slice(link, link_len);
+    reply_push_const("\">");
+    reply_html((Str) { title, title_len });
+    reply_push_const("</a>");
+    
+    if (embed_mode == EMBED_YOUTUBE) {
+        const char *embed = link + link_len + 1;
+        reply_push_const("<iframe class=\"clip-embed\" preload=metadata width=400 height=225 allowfullscreen src=\"https://www.youtube.com/embed/");
+        reply_push(embed);
+        reply_push_const("\"></iframe>");
+    }
+    
+}
+
 void reply_clips(EntrySearch *search, bool reverse_search) {
     Entry *entries[10];
     USize entry_count = 0;
@@ -106,9 +222,8 @@ void reply_clips(EntrySearch *search, bool reverse_search) {
 
         reply_push_const("<div class=clip>");
             reply_push_const("<div class=metadata>");
-                const char *metadata = entry_metadata(entry);
-                printf("- Found entry %s\n", metadata);
-                reply_push(metadata);
+                char *metadata = entry_metadata(entry);
+                reply_metadata(metadata);
             reply_push_const("</div>");
             reply_push_const("<div class=tags>");
                 const char *tags = entry_tags(entry);
@@ -123,6 +238,16 @@ void reply_clips(EntrySearch *search, bool reverse_search) {
             reply_push_const("</div>");
         reply_push_const("</div>");
     }
+    reply_push_const("</div>");
+}
+
+void reply_clear_error(void) {
+    reply_push_const("<div id=err hx-swap-oob=true></div>");
+}
+
+void reply_error(const char *err) {
+    reply_push_const("<div id=err hx-swap-oob=true>");
+    reply_push(err);
     reply_push_const("</div>");
 }
 
@@ -171,6 +296,46 @@ U32 parse_uint_hex(Str s) {
         n = (n << 4) | (U32)hex_decode_lut[c];
     }
     return n;
+}
+
+bool invalid_tag(Str tag) {
+    // a..z A..Z 0..9 _
+    static const U64 tag_char_ok[4] = { 0x3ff000000000000ULL, 0x7fffffe87fffffeULL, 0, 0, };
+    
+    U64 ok = 1;
+    for (USize i = 0; i < tag.len; ++i) {
+        char c = tag.buf[i];
+        ok &= tag_char_ok[c >> 6] >> (c & 63);
+    }
+    
+    return (ok & 1) == 0;
+}
+
+// https://stackoverflow.com/questions/205923/best-way-to-handle-security-and-avoid-xss-with-user-entered-urls
+bool possible_xss_in_link(Str link) {
+    // a..z A..Z 0..9 -_+&@#/%?=|~!:,.;()
+    static const U64 link_char_ok[4] = { 0xaffffb6a00000000ULL, 0x57fffffe87ffffffULL, 0, 0 };
+    
+    if (link.len == 0)
+        return false;
+    
+    // ensure http link
+    if (link.len < 8)
+        return true;
+
+    if (
+        memcmp(link.buf, "https://", 8) != 0
+        && memcmp(link.buf, "http://", 7) != 0
+    ) return true;
+    
+    // ensure charset ok
+    U64 ok = 1;
+    for (USize i = 0; i < link.len; ++i) {
+        char c = link.buf[i];
+        ok &= link_char_ok[c >> 6] >> 63;
+    }
+    
+    return (ok & 1) == 0;
 }
 
 void decode_uri(Str *uri_ptr) {
@@ -249,6 +414,77 @@ USize split_tags(Str tags, Str tagbuf[TAGMAX]) {
     }
 
     return tag_count;
+}
+
+/*
+twitch embed:
+<iframe class="embedIframe__623de" allow="autoplay; fullscreen" frameborder="0" scrolling="no" sandbox="allow-forms allow-modals allow-popups 
+    allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-fullscreen" allowfullscreen="" provider="Twitch" 
+    src="https://clips.twitch.tv/embed?clip=ChillyAcceptableFerretStrawBeary-oumAK09a7lKfvCFh&amp;parent=meta.tag" 
+    style="position: absolute; top: 0px; left: 0px; max-width: 400px; max-height: 225px;" width="400" height="225"
+></iframe>
+
+youtube embed
+<iframe class="embedIframe__623de" allow="autoplay; fullscreen" frameborder="0" scrolling="no" sandbox="allow-forms allow-modals allow-popups
+    allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-fullscreen" allowfullscreen="" provider="YouTube"  
+    src="https://www.youtube.com/embed/-9Dt2PRBu24?autoplay=1&amp;auto_play=1"
+    style="position: absolute; top: 0px; left: 0px; max-width: 400px; max-height: 225px;" width="400" height="225"
+></iframe>*/
+
+#define ConstStr(A) (Str) { (char *)A, sizeof(A)-1 }
+
+bool str_contains(Str src, Str find, USize *loc) {
+    for (USize i = 0; i + find.len <= src.len; ++i) {
+        if (memcmp(src.buf + i, find.buf, find.len) == 0) {
+            *loc = i;
+            return true; 
+        }
+    }
+
+    return false;
+}
+
+// valid youtube video id characters:
+// a..z | A..Z | 0..9 | - | _
+static const U64 yt_id_char[4] = { 0x3ff200000000000ULL, 0x7fffffe87fffffeULL, 0, 0 };
+
+// converts links to embeds if recognized.
+Str convert_link_to_embed_id(Str link, U8 *embed_mode) {
+    static const Str youtu_be = ConstStr("youtu.be/");
+    static const Str youtube_com = ConstStr("youtube.com/watch?v=");
+    // static const Str twitch_tv = ConstStr("twitch.tv/");
+    // static const Str twitch_video = ConstStr("/videos/");
+    // static const Str twitch_clip = ConstStr("/clip/");
+    
+    USize loc;
+    Str id = (Str) { 0 };
+
+    if (str_contains(link, youtu_be, &loc)) {
+        *embed_mode = EMBED_YOUTUBE;
+        id = (Str) { link.buf + loc + youtu_be.len, 0 };
+    } 
+    else if (str_contains(link, youtube_com, &loc)) {
+        *embed_mode = EMBED_YOUTUBE;
+        id = (Str) { link.buf + loc + youtube_com.len, 0 };
+    } else {
+        *embed_mode = EMBED_NONE;
+    }
+    // else if (str_contains(link, twitch_tv, &loc)) {
+    //     embed_mode.twitch = true;
+    //     id = { link.buf + loc + youtube_com.len, 0 };
+    // }
+    
+    if (*embed_mode == 1) {
+        // extract youtube id from link
+        while (link.buf + link.len > id.buf + id.len) {
+            char next_char = id.buf[id.len];
+            U64 mask = yt_id_char[next_char >> 6];
+            U64 bit = 1ULL << (next_char & 63);
+            if (mask & bit) { id.len++; } else { break; }
+        }
+    }
+    
+    return id;
 }
 
 void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
@@ -351,26 +587,82 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 
                 reply_headers_push_const("\r\n");
                 
+                reply_clear_error();
                 reply_send(c);
             }
             else if (mg_match(hm->uri, mg_str("/post-clip"), NULL)) {
-                Str metadata = mg_http_var(hm->body, mg_str("metadata"));
-                decode_uri(&metadata);
+                Str title = mg_http_var(hm->body, mg_str("title"));
+                Str link = mg_http_var(hm->body, mg_str("link"));
+                decode_uri(&title);
+                decode_uri(&link);
+                if (possible_xss_in_link(link)) {
+                    reply_error("Error: Link must start with http:// or https:// and contain only valid URL characters.");
+                    reply_send(c);
+                    return;
+                }
+                U8 embed_mode;
+                Str embed = convert_link_to_embed_id(link, &embed_mode);
+                
+                #define METAMAX 2048
+                char metabuf[METAMAX];
+                USize meta_len = 0;
+                
+                // copy info byte
+                metabuf[meta_len++] = (0 << 4) | embed_mode;
+                
+                // copy title
+                if (meta_len + title.len < METAMAX) {
+                    memcpy(metabuf + meta_len, title.buf, title.len);
+                    metabuf[meta_len + title.len] = 0;
+                }
+                meta_len += title.len + 1;
+                
+                // copy link
+                if (meta_len + link.len < METAMAX) {
+                    memcpy(metabuf + meta_len, link.buf, link.len);
+                    metabuf[meta_len + link.len] = 0;
+                }
+                meta_len += link.len + 1;
+                
+                // copy embed id
+                if (embed_mode != 0) {
+                    if (meta_len + embed.len < METAMAX) {
+                        memcpy(metabuf + meta_len, embed.buf, embed.len);
+                        metabuf[meta_len + embed.len] = 0;
+                    }
+                    meta_len += embed.len + 1;
+                }
+                
+                if (meta_len > METAMAX) {
+                    reply_error("Error: Title and link are too large!");
+                    reply_send(c);
+                    return;
+                }
+
+                Str metadata = (Str) { metabuf, meta_len };
                 EntryIdx entry = create_entry(metadata);
                 mg_print_str("- Added entry: \n", metadata);
-                
+            
                 Str tags_str = mg_http_var(hm->body, mg_str("tags"));
                 decode_uri(&tags_str);
                 Str tags[TAGMAX];
                 USize tag_count = split_tags(tags_str, tags);
                 for (USize i = 0; i < tag_count; ++i) {
                     Str tag = tags[i];
+                    
+                    if (invalid_tag(tag)) {
+                        reply_error("Error: Invalid tag. Tags must only contain letters, digits, and underscores.");
+                        reply_send(c);
+                        return;
+                    }
+
                     mg_print_str("- Tagged: ", tag);
                     tag_entry(entry, tag);
                 }
-                
+            
                 EntrySearch search = { 0 };
                 reply_clips(&search, false);
+                reply_clear_error();
                 reply_send(c);
             }
         }

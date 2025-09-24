@@ -114,18 +114,17 @@ static void tag_entry(EntryIdx entry_idx, Str tag) {
     tag_strings[tag_strings_size++] = '\n';
 }
 
-static const char *entry_metadata(Entry *entry) {
+static char *entry_metadata(Entry *entry) {
     return &meta[entry->meta_idx];
 }
 
-static const char *entry_tags(Entry *entry) {
+static char *entry_tags(Entry *entry) {
     return &tag_strings[entry->tag_strings_idx];
 }
 
 static EntryIdx create_entry(Str new_meta) {
     EntryIdx entry_idx = meta_entry_count++;
     
-    meta_size++; // leave previous metadata null-terminated
     tag_strings_size++; // leave previous tag strings null-terminated
     entry_table[entry_idx] = (Entry) { meta_size, tag_strings_size };
     
@@ -287,18 +286,18 @@ static void init_clip_tables(void) {
 // populate db for testing
 __attribute__((unused))
 static void create_entries(U32 count, U32 tag_count) {
-    char metabuf[16] = "entry ";
+    char metabuf[13] = { 0, 'e', ' ',    0, 0, 0, 0, 0, 0, 0, 0,    0, 0 };
     char tagbuf[3] = { 0 };
     U32 rng = 0x67236;
     
     for (U32 i = 0; i < count; ++i) {
         U32 n = i;
         for (U32 j = 0; j < 8; ++j) { 
-            metabuf[6 + j] = 'a' + (char)(n >> 28);
+            metabuf[3 + j] = 'a' + (char)(n >> 28);
             n <<= 4;
         }
         
-        Str metadata = { metabuf, 6 + 8 };
+        Str metadata = { metabuf, 13 };
         EntryIdx entry = create_entry(metadata);
 
         for (U32 j = 0; j < tag_count; ++j) {

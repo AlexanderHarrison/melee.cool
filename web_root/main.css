@@ -94,6 +94,11 @@ spaced {
     padding-bottom: 10px;
     line-height: 1.2;
 }
+.clip-embed {
+    max-width: 400px;
+    max-height: 225px;
+    border: none;
+}
 .tag {
     display: inline;
     padding-right: 5px;

@@ -13,6 +13,8 @@
 
 <h1 class=title>Clip Dump</h1>
 
+<div id="err"></div>
+
 <div id="search">
     <form id="search-form" hx-post="/find-clips" hx-swap="none">
         <label for="search-tags">Tags:</label>
@@ -33,8 +35,11 @@
 
 <div id="post">
     <form id="post-form" hx-post="/post-clip" hx-swap="none">
-        <label for="post-metadata">Link/Description:</label>
-        <input type="text" id="post-metadata" name="metadata"/><br>
+        <label for="post-title">Title:</label>
+        <input type="text" id="post-title" name="title"/><br>
+        
+        <label for="post-link">Link:</label>
+        <input type="text" id="post-link" name="link"/><br>
         
         <label for="post-tags">Tags:</label>
         <input type="text" id="post-tags" name="tags"/><br>
