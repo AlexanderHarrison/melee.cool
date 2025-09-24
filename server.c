@@ -144,6 +144,7 @@ enum embed_mode {
     EMBED_NONE = 0,
     EMBED_YOUTUBE,
     EMBED_TWITCH_CLIP,
+    EMBED_TWITCH_VIDEO,
 };
 
 /* 
@@ -151,10 +152,11 @@ enum embed_mode {
     First byte is special:
         low bits  0..4: version (0)
         high bits 4..8: embed mode
-    Then follows null terminated strings:
+    Then follows these null terminated strings:
         title
         link
         embed id (only present if embed mode is nonzero)
+        timestamp (only present if embed mode is nonzero)
 */
                 
 void reply_metadata(char *buf) {
@@ -170,23 +172,55 @@ void reply_metadata(char *buf) {
     
     char *link = title + title_len + 1;
     USize link_len = strlen(link);
-    
+
     reply_push_const("<a class=title href=\"");
     reply_push_slice(link, link_len);
     reply_push_const("\">");
     reply_html((Str) { title, title_len });
     reply_push_const("</a>");
     
+    const char *embed = NULL;
+    USize embed_len = 0;
+    const char *timestamp = NULL;
+    USize timestamp_len = 0;
+    if (embed_mode != EMBED_NONE) {
+        embed = link + link_len + 1;
+        embed_len = strlen(embed);
+        timestamp = embed + embed_len + 1;
+        timestamp_len = strlen(timestamp);
+    }
+    
     if (embed_mode == EMBED_YOUTUBE) {
-        const char *embed = link + link_len + 1;
         reply_push_const("<iframe class=\"clip-embed\" preload=metadata width=400 height=225 allowfullscreen src=\"https://www.youtube.com/embed/");
-        reply_push(embed);
+        reply_push_slice(embed, embed_len);
+        
+        if (timestamp_len) {
+            reply_push_const("?start=");
+            reply_push_slice(timestamp, timestamp_len);
+        }
+        
         reply_push_const("\"></iframe>");
     }
     else if (embed_mode == EMBED_TWITCH_CLIP) {
-        const char *embed = link + link_len + 1;
-        reply_push_const("<iframe class=\"clip-embed\" width=400 height=225 allowfullscreen src=\"https://clips.twitch.tv/embed?clip=");
-        reply_push(embed);
+        reply_push_const("<iframe class=\"clip-embed\" preload=metadata width=400 height=225 allowfullscreen src=\"https://clips.twitch.tv/embed?clip=");
+        reply_push_slice(embed, embed_len);
+        
+        if (timestamp_len) {
+            reply_push_const("&t=");
+            reply_push_slice(timestamp, timestamp_len);
+        }
+        
+        reply_push_const("&parent=melee.cool\"></iframe>");
+    }
+    else if (embed_mode == EMBED_TWITCH_VIDEO) {
+        reply_push_const("<iframe class=\"clip-embed\" preload=metadata width=400 height=225 allowfullscreen src=\"https://player.twitch.tv/?video=v");
+        reply_push_slice(embed, embed_len);
+        
+        if (timestamp_len) {
+            reply_push_const("&t=");
+            reply_push_slice(timestamp, timestamp_len);
+        }
+        
         reply_push_const("&parent=melee.cool\"></iframe>");
     }
 }
@@ -452,45 +486,92 @@ bool str_contains(Str src, Str find, USize *loc) {
 // a..z | A..Z | 0..9 | - | _
 static const U64 id_char_ok[4] = { 0x3ff200000000000ULL, 0x7fffffe87fffffeULL, 0, 0 };
 
+typedef struct EmbedInfo {
+    U8 mode;
+    Str id;
+    Str timestamp;
+} EmbedInfo;
+
 // converts links to embeds if recognized.
-Str convert_link_to_embed_id(Str link, U8 *embed_mode) {
+void convert_link_to_embed(Str link, EmbedInfo *embed) {
     static const Str youtu_be = ConstStr("youtu.be/");
     static const Str youtube_com = ConstStr("youtube.com/watch?v=");
     static const Str twitch_tv = ConstStr("twitch.tv/");
-    // static const Str twitch_video = ConstStr("/videos/");
+    static const Str twitch_video = ConstStr("/videos/");
     static const Str twitch_clip = ConstStr("/clip/");
+    static const Str timestamp_attr_qm = ConstStr("?t=");
+    static const Str timestamp_attr_and = ConstStr("&t=");
     
     USize loc;
-    Str id = (Str) { 0 };
     
     // determine embed mode
-    *embed_mode = EMBED_NONE;
+    U8 mode = EMBED_NONE;
+    Str id = (Str) { 0 };
+    Str timestamp = (Str) { 0 };
+    
     if (str_contains(link, youtu_be, &loc)) {
-        *embed_mode = EMBED_YOUTUBE;
+        mode = EMBED_YOUTUBE;
         id = (Str) { link.buf + loc + youtu_be.len, 0 };
     } 
     else if (str_contains(link, youtube_com, &loc)) {
-        *embed_mode = EMBED_YOUTUBE;
+        mode = EMBED_YOUTUBE;
         id = (Str) { link.buf + loc + youtube_com.len, 0 };
     }
     else if (str_contains(link, twitch_tv, &loc)) {
         if (str_contains(link, twitch_clip, &loc)) {
-            *embed_mode = EMBED_TWITCH_CLIP;
+            mode = EMBED_TWITCH_CLIP;
             id = (Str) { link.buf + loc + twitch_clip.len, 0 };
+        }
+        else if (str_contains(link, twitch_video, &loc)) {
+            mode = EMBED_TWITCH_VIDEO;
+            id = (Str) { link.buf + loc + twitch_video.len, 0 };
         }
     }
     
-    // extract id from link
-    if (*embed_mode == EMBED_YOUTUBE || *embed_mode == EMBED_TWITCH_CLIP) {
+    if (mode != EMBED_NONE) {
+        // extract id from link
         while (link.buf + link.len > id.buf + id.len) {
             char next_char = id.buf[id.len];
             U64 mask = id_char_ok[next_char >> 6];
             U64 bit = 1ULL << (next_char & 63);
             if (mask & bit) { id.len++; } else { break; }
         }
+
+        if (str_contains(link, timestamp_attr_and, &loc))
+            timestamp.buf = link.buf + loc + timestamp_attr_and.len;
+        else if (str_contains(link, timestamp_attr_qm, &loc))
+            timestamp.buf = link.buf + loc + timestamp_attr_qm.len;
     }
     
-    return id;
+    // extract timestamp from link
+    if (timestamp.buf) {
+        if (mode == EMBED_YOUTUBE) {
+            // t=1234s
+            // Embed formats don't have the trailing s, so we only parse digits.
+            while (link.buf + link.len > timestamp.buf + timestamp.len) {
+                char next_char = timestamp.buf[timestamp.len];
+    
+                // only allow digits
+                if (((unsigned char)next_char - (unsigned char)'0') <= 9)
+                    timestamp.len++;
+                else
+                    break;
+            }
+        }
+        else if (mode == EMBED_TWITCH_CLIP || mode == EMBED_TWITCH_VIDEO) {
+            // t=1h23m45s
+            while (link.buf + link.len > timestamp.buf + timestamp.len) {
+                char next_char = timestamp.buf[timestamp.len];
+    
+                // reusing id characters should be fine
+                U64 mask = id_char_ok[next_char >> 6];
+                U64 bit = 1ULL << (next_char & 63);
+                if (mask & bit) { timestamp.len++; } else { break; }
+            }
+        }
+    }
+    
+    *embed = (EmbedInfo) { mode, id, timestamp };
 }
 
 void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
@@ -606,15 +687,15 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                     reply_send(c);
                     return;
                 }
-                U8 embed_mode;
-                Str embed = convert_link_to_embed_id(link, &embed_mode);
+                EmbedInfo embed;
+                convert_link_to_embed(link, &embed);
                 
                 #define METAMAX 2048
                 char metabuf[METAMAX];
                 USize meta_len = 0;
                 
                 // copy info byte
-                metabuf[meta_len++] = (0 << 4) | embed_mode;
+                metabuf[meta_len++] = (0 << 4) | embed.mode;
                 
                 // copy title
                 if (meta_len + title.len < METAMAX) {
@@ -630,13 +711,20 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 }
                 meta_len += link.len + 1;
                 
-                // copy embed id
-                if (embed_mode != 0) {
-                    if (meta_len + embed.len < METAMAX) {
-                        memcpy(metabuf + meta_len, embed.buf, embed.len);
-                        metabuf[meta_len + embed.len] = 0;
+                if (embed.mode != EMBED_NONE) {
+                    // copy embed id
+                    if (meta_len + embed.id.len < METAMAX) {
+                        memcpy(metabuf + meta_len, embed.id.buf, embed.id.len);
+                        metabuf[meta_len + embed.id.len] = 0;
                     }
-                    meta_len += embed.len + 1;
+                    meta_len += embed.id.len + 1;
+                    
+                    // copy embed timestamp
+                    if (meta_len + embed.timestamp.len < METAMAX) {
+                        memcpy(metabuf + meta_len, embed.timestamp.buf, embed.timestamp.len);
+                        metabuf[meta_len + embed.timestamp.len] = 0;
+                    }
+                    meta_len += embed.timestamp.len + 1;
                 }
                 
                 if (meta_len > METAMAX) {
