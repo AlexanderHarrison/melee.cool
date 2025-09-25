@@ -1,3 +1,5 @@
+/* #################### GLOBAL #################### */
+
 @import "/theme.css";
 
 body {
@@ -77,35 +79,6 @@ spaced {
     margin-right: 10pt;
 }
 
-.title {
-    text-align: center;
-}
-
-.centred-link {
-    padding: 20px;
-    text-align: center;
-}
-
-.inline-icon {
-    vertical-align: middle;
-}
-
-.clip {
-    padding-bottom: 10px;
-    line-height: 1.2;
-}
-.clip-embed {
-    max-width: 400px;
-    max-height: 225px;
-    border: none;
-}
-.tag {
-    display: inline;
-    padding-right: 5px;
-    line-height: 1;
-    font-size: 12px;
-}
-
 a {
     color: var(--hl);
     text-decoration: none;
@@ -117,4 +90,173 @@ a:hover {
 
 a:visited {
     color: var(--hl-dim);
+}
+
+.centred-link {
+    padding: 20px;
+    text-align: center;
+}
+
+.inline-icon {
+    vertical-align: middle;
+}
+
+.title {
+    text-align: center;
+}
+
+/* #################### CLIPS #################### */
+
+#plug {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 5px;
+    font-size: 12px;
+}
+
+input {
+    background-color: var(--fg);
+}
+button {
+    background-color: var(--fg);
+}
+
+#search-and-clips {
+    background-color: var(--bg-l);
+    border-radius: 10px;
+    padding: 10px 0 10px 0;
+}
+
+#clips {
+    text-align: center;
+}
+
+#post {
+    background-color: var(--bg-l);
+    border-radius: 10px;
+    width: 400px;
+    margin: 20px auto 20px auto;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 20px 10px 20px;
+}
+
+.post-row {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    padding: 2px;
+    
+    label {
+        text-align: start;
+        flex-grow: 1;
+    }
+    
+    input {
+        width: 340px;
+    }
+}
+
+#post-form {
+    text-align: center;
+}
+    
+#err {
+    color: var(--red);
+}
+
+#search {
+    display: flex;
+    justify-content: center;
+    padding: 5px;
+}
+
+#pages {
+    display: flex;
+    justify-content: center;
+    padding: 5px;
+}
+
+.clip {
+    padding-top: 15px;
+    line-height: 1.2;
+}
+.clip-title {
+    font-size: 20px;
+    text-align: center;
+}
+.clip-embed {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    max-width: 400px;
+    max-height: 225px;
+    margin-left: auto;
+    margin-right: auto;
+    border: none;
+}
+.metadata {
+    width: auto;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    padding-bottom: 5px;
+}
+.tags {
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+}
+.tag {
+    padding-right: 5px;
+    line-height: 1;
+    font-size: 12px;
+}
+
+/* only display autocomplete when input is focused */
+#search-autocomplete:hover, #post-autocomplete:hover {
+    display: block;
+}
+#search-tags:focus + #search-autocomplete {
+    display: block;
+}
+#post-tags:focus + #post-autocomplete {
+    display: block;
+}
+#search-tags {
+    width: 340px;
+}
+#search-autocomplete, #post-autocomplete {
+    display: none;
+    z-index: 10;
+    background-color: black;
+    position: absolute;
+    min-width: 100px;
+    font-size: 12px;
+}
+#post-autocomplete {
+    transform: translate(50px, 24px);
+} 
+
+.autocomplete-item:hover {
+    background-color: var(--bg);
+}
+.autocomplete-item {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    border-radius: 5px;
+    background-color: black;
+    color: var(--fg);
+    border: none;
+    display: block;
+    width: 100%;
+}
+.autocomplete-tag {
+    display: inline;
+    float: left;
+}
+.autocomplete-count {
+    display: inline;
+    float: right;
 }

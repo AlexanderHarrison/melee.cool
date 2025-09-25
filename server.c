@@ -69,6 +69,21 @@ void reply_push_slice(const char *buf, USize len) {
     reply.len += len;
 }
 
+void reply_push_uint(U32 n) {
+    char digits[10];
+    USize len = 0;
+    do {
+        digits[len++] = '0' + (char)(n % 10);
+        n /= 10;
+    } while (n);
+    
+    if (reply.len + len <= REPLYSIZE) {
+        for (; len != 0; --len)
+            reply.buf[reply.len++] = digits[len-1];
+    }
+    reply.len += len;
+}
+
 char html_char_escape_lut[] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
     16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 
@@ -173,7 +188,7 @@ void reply_metadata(char *buf) {
     char *link = title + title_len + 1;
     USize link_len = strlen(link);
 
-    reply_push_const("<a class=title href=\"");
+    reply_push_const("<a class=\"clip-title\" href=\"");
     reply_push_slice(link, link_len);
     reply_push_const("\">");
     reply_html((Str) { title, title_len });
@@ -680,6 +695,13 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
             else if (mg_match(hm->uri, mg_str("/post-clip"), NULL)) {
                 Str title = mg_http_var(hm->body, mg_str("title"));
                 Str link = mg_http_var(hm->body, mg_str("link"));
+                
+                if (title.len == 0) {
+                    reply_error("Error: Post must have a title.");
+                    reply_send(c);
+                    return;
+                }
+                
                 decode_uri(&title);
                 decode_uri(&link);
                 if (possible_xss_in_link(link)) {
@@ -759,6 +781,24 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 reply_clear_error();
                 reply_send(c);
             }
+            else if (mg_match(hm->uri, mg_str("/tag-autocomplete"), NULL)) {
+                Str prefix = mg_http_var(hm->body, mg_str("tag-prefix"));
+                AutoCompleteLookup ac = tag_autocomplete(prefix);
+                
+                for (U32 i = 0; i < ac.count; ++i) {
+                    reply_push_const("<button class=autocomplete-item type=\"button\" onclick=\"tag_autocomplete(this);\">");
+                        reply_push_const("<div class=autocomplete-tag>");
+                            reply_push_slice(prefix.buf, prefix.len);
+                            reply_push(ac.tag_names[i]);
+                        reply_push_const("</div>");
+                        reply_push_const("<div class=autocomplete-count>");
+                            reply_push_uint(ac.tag_table_sizes[i]);
+                        reply_push_const("</div>");
+                    reply_push_const("</button>");
+                }
+                
+                reply_send(c);
+            }
         }
     }
     else if (ev == MG_EV_ACCEPT && c->is_tls) {
@@ -773,6 +813,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
 int main(void) {
     init_clip_tables();
     create_entries(1 << 16, 8);
+    remake_tag_autocomplete();
     
     reply.buf = calloc(REPLYSIZE, 1);
     

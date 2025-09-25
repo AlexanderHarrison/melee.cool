@@ -4,55 +4,134 @@
     <link rel="stylesheet" href="/main.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clip Dump</title>
+    <title>The Clip Dump</title>
     <script src="/htmx.js"></script>
 </head>
 <body>
 
 <script src=/header.js></script>
 
-<h1 class=title>Clip Dump</h1>
+<h1 class=title>🚧 The Clip Dump 🚧</h1>
 
-<div id="err"></div>
-
-<div id="search">
-    <form id="search-form" hx-post="/find-clips" hx-swap="none">
-        <label for="search-tags">Tags:</label>
-        <input type="text" id="search-tags" name="tags"/><br>
-
-        <input type="submit" value="Search" />
-    </form>
-</div>
-
-<br>
-
-<div id="pages">
-    <button onclick="find_clips('idx-a', true);">Prev Page</button>
-    <button onclick="find_clips('idx-b', false);">Next Page</button>
-</div>
-
-<br>
+<a id=plug href="https://patreon.com/rwing_aitch">
+    Please consider helping with server costs on my Patreon.
+</a>
 
 <div id="post">
-    <form id="post-form" hx-post="/post-clip" hx-swap="none">
-        <label for="post-title">Title:</label>
-        <input type="text" id="post-title" name="title"/><br>
-        
-        <label for="post-link">Link:</label>
-        <input type="text" id="post-link" name="link"/><br>
-        
-        <label for="post-tags">Tags:</label>
-        <input type="text" id="post-tags" name="tags"/><br>
+    <h2 class=title>Submit a Clip</h2>
 
-        <input type="submit" value="Post" />
+    <div id="err"></div>
+    
+    <form id="post-form" hx-post="/post-clip" hx-swap="none">
+        <div class=post-row>
+            <label for="post-title">Title:</label>
+            <input
+                type="text"
+                id="post-title"
+                name="title"
+                autocomplete="off"
+                placeholder="Mang0 Zain Grand Finals Summit 11"
+            /><br>
+        </div>
+        
+        <div class=post-row>
+            <label for="post-link">Link:</label>
+            <input 
+                type="text"
+                id="post-link"
+                name="link"
+                autocomplete="off"
+                placeholder="https://youtu.be/P4gNB3Cfai4"
+            /><br>
+        </div>
+        
+        <div class=post-row>
+            <label for="post-tags">Tags:</label>
+            <input
+                type="text"
+                id="post-tags"
+                name="tags"
+                autocomplete="off"
+                placeholder="ssbm mang0 zain summit_11 game_10"
+                hx-post="/tag-autocomplete"
+                hx-vals="js:{ 'tag-prefix': get_current_tag(event.target) }"
+                hx-trigger="selectionchange"
+                hx-target="#post-autocomplete"
+                hx-swap="innerHTML"
+            />
+            <div id="post-autocomplete"></div><br>
+        </div>
+
+        <input type="submit" value="Submit" />
     </form>
 </div>
 
-<br>
+<div id="search-and-clips">
+    <h2 class=title>Search for Clips</h2>
 
-<div id=clips></div>
+    <div id="search">
+        <form id="search-form" hx-post="/find-clips" hx-swap="none">
+            <input
+                type="text"
+                id="search-tags"
+                name="tags"
+                autocomplete="off"
+                placeholder="ssbm trif edgeguard"
+                hx-post="/tag-autocomplete"
+                hx-vals="js:{ 'tag-prefix': get_current_tag(event.target) }"
+                hx-trigger="selectionchange"
+                hx-target="#search-autocomplete"
+                hx-swap="innerHTML"
+            />
+            <div id="search-autocomplete"></div>
+            <input type="submit" value="Search" />
+        </form>
+    </div>
+    
+    <div id="pages">
+        <button onclick="find_clips('idx-a', true);">Prev Page</button>
+        <button onclick="find_clips('idx-b', false);">Next Page</button>
+    </div>
+    
+    <div id=clips></div>
+    
+</div>
 
 <script>
+function tag_autocomplete(ele) {
+    const tag = ele.firstChild.textContent;
+    const input = ele.parentElement.previousElementSibling;
+    
+    const str = input.value;
+    console.log(str);
+    const pos = input.selectionStart;
+    
+    let start = pos;
+    let end = pos;
+    const is_boundary = (char) => /\s/.test(char);
+    while (start > 0 && !is_boundary(str[start - 1])) { start--; }
+    while (end < str.length - 1 && !is_boundary(str[end + 1])) { end++; }
+
+    input.value = str.substring(0, start) + tag + str.substring(end);
+    input.selectionStart = start + tag.length;
+    input.selectionEnd = start + tag.length;
+    input.focus();
+}
+
+function get_current_tag(ele) {
+    const str = ele.value;
+    const pos = ele.selectionStart;
+    
+    let start = pos;
+    let end = pos;
+    
+    const is_boundary = (char) => /\s/.test(char);
+    
+    while (start > 0 && !is_boundary(str[start - 1])) { start--; }
+    while (end < str.length - 1 && !is_boundary(str[end + 1])) { end++; }
+    return str.substring(start, end + 1).trim();
+}
+
 function find_clips(idx_param, reverse) {
     const params = new URLSearchParams(window.location.search);
     const tags = params.get("tags");
