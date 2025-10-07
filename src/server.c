@@ -212,7 +212,7 @@ void reply_clip(char *buf) {
     char *link = title + title_len + 1;
     USize link_len = strlen(link);
 
-    reply_push_const("<a class=\"clip-title\" href=\"");
+    reply_push_const("<a class=clip-title href=\"");
     reply_push_slice(link, link_len);
     reply_push_const("\">");
     reply_html((Str) { title, title_len });
@@ -233,7 +233,7 @@ void reply_clip(char *buf) {
     }
     
     if (embed_mode == EMBED_YOUTUBE) {
-        reply_push_const("<iframe class=\"clip-embed\" preload=metadata width=400 height=225 allowfullscreen src=\"https://www.youtube.com/embed/");
+        reply_push_const("<iframe class=clip-embed preload=metadata width=400 height=225 allowfullscreen src=\"https://www.youtube.com/embed/");
         reply_push_slice(embed, embed_len);
         
         if (timestamp_len) {
@@ -244,7 +244,7 @@ void reply_clip(char *buf) {
         reply_push_const("\"></iframe>");
     }
     else if (embed_mode == EMBED_TWITCH_CLIP) {
-        reply_push_const("<iframe class=\"clip-embed\" preload=metadata width=400 height=225 allowfullscreen src=\"https://clips.twitch.tv/embed?clip=");
+        reply_push_const("<iframe class=clip-embed preload=metadata width=400 height=225 allowfullscreen src=\"https://clips.twitch.tv/embed?clip=");
         reply_push_slice(embed, embed_len);
         
         if (timestamp_len) {
@@ -255,7 +255,7 @@ void reply_clip(char *buf) {
         reply_push_const("&autoplay=false&parent=melee.cool\"></iframe>");
     }
     else if (embed_mode == EMBED_TWITCH_VIDEO) {
-        reply_push_const("<iframe class=\"clip-embed\" preload=metadata width=400 height=225 allowfullscreen src=\"https://player.twitch.tv/?video=v");
+        reply_push_const("<iframe class=clip-embed preload=metadata width=400 height=225 allowfullscreen src=\"https://player.twitch.tv/?video=v");
         reply_push_slice(embed, embed_len);
         
         if (timestamp_len) {
@@ -625,14 +625,98 @@ void convert_link_to_embed(Str link, EmbedInfo *embed) {
     *embed = (EmbedInfo) { mode, id, timestamp };
 }
 
-// return true on error
-// bool construct_metadata(
-//     Str title,
-//     Str link,
-//     Str tags[TAG_MAX],
-//     USize tag_count
-// ) {
-// }
+bool str_eq(Str a, Str b) {
+    return a.len == b.len && memcmp(a.buf, b.buf, a.len) == 0;
+}
+
+// return nonnull on error
+const char *construct_metadata(
+    Str title,
+    Str link,
+    Str tags[TAG_MAX],
+    USize tag_count
+) {
+    EmbedInfo embed;
+    convert_link_to_embed(link, &embed);
+
+    char *metadata = metabuf;
+    USize meta_len = 0;
+    
+    // copy info byte
+    metadata[meta_len++] = (0 << 4) | embed.mode;
+    
+    // copy title
+    if (meta_len + title.len < META_MAX) {
+        memcpy(metadata + meta_len, title.buf, title.len);
+        metadata[meta_len + title.len] = 0;
+    }
+    meta_len += title.len + 1;
+    
+    // copy link
+    if (meta_len + link.len < META_MAX) {
+        memcpy(metadata + meta_len, link.buf, link.len);
+        metadata[meta_len + link.len] = 0;
+    }
+    meta_len += link.len + 1;
+    
+    // copy tags
+    for (USize i = 0; i < tag_count; ++i) {
+        Str tag = tags[i];
+        memcpy(metadata + meta_len, tag.buf, tag.len);
+        metadata[meta_len + tag.len] = '\n';
+        meta_len += tag.len + 1;
+    }
+    metadata[meta_len++] = 0;
+    
+    if (embed.mode != EMBED_NONE) {
+        // copy embed id
+        if (meta_len + embed.id.len < META_MAX) {
+            memcpy(metadata + meta_len, embed.id.buf, embed.id.len);
+            metadata[meta_len + embed.id.len] = 0;
+        }
+        meta_len += embed.id.len + 1;
+        
+        // copy embed timestamp
+        if (meta_len + embed.timestamp.len < META_MAX) {
+            memcpy(metadata + meta_len, embed.timestamp.buf, embed.timestamp.len);
+            metadata[meta_len + embed.timestamp.len] = 0;
+        }
+        meta_len += embed.timestamp.len + 1;
+    }
+    
+    if (meta_len > META_MAX) {
+        return "Title and link are too large!";
+    }
+
+    if (tag_count == 0) {
+        return "Post is untagged.";
+    }
+    
+    MetaIdx entry = create_entry((Str) { metadata, meta_len });
+    
+    mg_print_str("- Added title: ", title);
+    mg_print_str("- Added link: ", link);
+
+    for (USize i = 0; i < tag_count; ++i) {
+        Str tag = tags[i];
+        
+        bool already_tagged = false;
+        for (USize j = 0; j < i; ++j) {
+            // avoid repeated tags
+            if (str_eq(tag, tags[j])) {
+                already_tagged = true;
+                break;
+            }
+        }
+
+        if (!already_tagged) {
+            mg_print_str("- Tagged: ", tag);
+            tag_entry(entry, tag);
+        }
+    }
+    
+    return NULL;
+}
 
 void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
     if (ev == MG_EV_HTTP_MSG) {
@@ -737,19 +821,19 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 Str tags_str = mg_http_var(hm->body, mg_str("tags"));
                 
                 if (title.len == 0) {
-                    reply_error("Error: Post must have a title.");
+                    reply_error("Post must have a title.");
                     reply_send(c);
                     return;
                 }
 
                 if (link.len == 0) {
-                    reply_error("Error: Post must have a link.");
+                    reply_error("Post must have a link.");
                     reply_send(c);
                     return;
                 }
                 
                 if (tags_str.len == 0) {
-                    reply_error("Error: Post is untagged.");
+                    reply_error("Post is untagged.");
                     reply_send(c);
                     return;
                 }
@@ -758,12 +842,10 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 decode_uri(&link);
                 decode_uri(&tags_str);
                 if (possible_xss_in_link(link)) {
-                    reply_error("Error: Link must start with http:// or https:// and contain only valid URL characters.");
+                    reply_error("Link must start with http:// or https:// and contain only valid URL characters.");
                     reply_send(c);
                     return;
                 }
-                EmbedInfo embed;
-                convert_link_to_embed(link, &embed);
 
                 Str tags[TAG_MAX];
                 USize tag_count = split_tags(tags_str, tags);
@@ -771,84 +853,24 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                     Str tag = tags[i];
                     
                     if (invalid_tag(tag)) {
-                        reply_error("Error: Invalid tag. Tags must only contain letters, digits, and underscores.");
+                        reply_error("Invalid tag. Tags must only contain letters, digits, and underscores.");
                         reply_send(c);
                         return;
                     }
                     
                     if (tag.len > TAG_LEN_MAX) {
-                        reply_error("Error: Tag is too long.");
+                        reply_error("Tag is too long.");
                         reply_send(c);
                         return;
                     }
                 }
                 
-                char *metadata = metabuf;
-                USize meta_len = 0;
-                
-                // copy info byte
-                metadata[meta_len++] = (0 << 4) | embed.mode;
-                
-                // copy title
-                if (meta_len + title.len < META_MAX) {
-                    memcpy(metadata + meta_len, title.buf, title.len);
-                    metadata[meta_len + title.len] = 0;
-                }
-                meta_len += title.len + 1;
-                
-                // copy link
-                if (meta_len + link.len < META_MAX) {
-                    memcpy(metadata + meta_len, link.buf, link.len);
-                    metadata[meta_len + link.len] = 0;
-                }
-                meta_len += link.len + 1;
-                
-                // copy tags
-                for (USize i = 0; i < tag_count; ++i) {
-                    Str tag = tags[i];
-                    memcpy(metadata + meta_len, tag.buf, tag.len);
-                    metadata[meta_len + tag.len] = '\n';
-                    meta_len += tag.len + 1;
-                }
-                metadata[meta_len++] = 0;
-                
-                if (embed.mode != EMBED_NONE) {
-                    // copy embed id
-                    if (meta_len + embed.id.len < META_MAX) {
-                        memcpy(metadata + meta_len, embed.id.buf, embed.id.len);
-                        metadata[meta_len + embed.id.len] = 0;
-                    }
-                    meta_len += embed.id.len + 1;
-                    
-                    // copy embed timestamp
-                    if (meta_len + embed.timestamp.len < META_MAX) {
-                        memcpy(metadata + meta_len, embed.timestamp.buf, embed.timestamp.len);
-                        metadata[meta_len + embed.timestamp.len] = 0;
-                    }
-                    meta_len += embed.timestamp.len + 1;
-                }
-                
-                if (meta_len > META_MAX) {
-                    reply_error("Error: Title and link are too large!");
+                // construct_metadata
+                const char *err = construct_metadata(title, link, tags, tag_count);
+                if (err) {
+                    reply_error(err);
                     reply_send(c);
                     return;
-                }
-
-                if (tag_count == 0) {
-                    reply_error("Error: Post is untagged.");
-                    reply_send(c);
-                    return;
-                }
-                
-                MetaIdx entry = create_entry((Str) { metadata, meta_len });
-                
-                mg_print_str("- Added title: ", title);
-                mg_print_str("- Added link: ", link);
-            
-                for (USize i = 0; i < tag_count; ++i) {
-                    Str tag = tags[i];
-                    mg_print_str("- Tagged: ", tag);
-                    tag_entry(entry, tag);
                 }
                 
                 EntrySearch search = { 0 };

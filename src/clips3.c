@@ -84,7 +84,7 @@ static int filter_file(const struct dirent *entry) {
 }
 
 #define TAG_MAX 32
-#define TAG_LEN_MAX 63
+#define TAG_LEN_MAX 31
 typedef struct EntrySearch {
     U32 tag_count;
     TagEntry tag_entry[TAG_MAX];
@@ -156,7 +156,7 @@ static MetaIdx *tag_entry_table_get(TagEntry *tag_entry, Str tag_name) {
     if (fd < 0)
         return NULL;
     
-    MetaIdx *table = mmap(NULL, tag_entry->table_size, PROT_READ, MAP_PRIVATE, fd, 0); 
+    MetaIdx *table = mmap(NULL, tag_entry->table_size * sizeof(U32), PROT_READ, MAP_PRIVATE, fd, 0); 
     if (table == MAP_FAILED) {
         close(fd);
         return NULL;
@@ -308,7 +308,7 @@ static bool search_next_tagless(char *buf, EntrySearch *search) {
     if (tag_entry_table == NULL)
         return false;
     
-    search->tag_search_idx[0]++;
+    search->tag_search_idx[0] = search_i + 1;
     U32 i = tag_entry->table_size - search_i - 1;
     MetaIdx meta_i = tag_entry_table[i];
     tag_entry_table_close(tag_entry_table, tag_entry);
@@ -554,6 +554,10 @@ static void init_clip_tables(void) {
 
         TagEntry *tag = lookup_tag(tag_name);
         tag->table_size = tag_size;
+        
+        // ignore special tags - e.g. !all
+        if (tag_name.len != 0 && tag_name.buf[0] == '!')
+            continue;
 
         // fill out autocomplete table for each prefix in tag
         for (USize prefix_len = 0; prefix_len <= tag_name.len; ++prefix_len) {
