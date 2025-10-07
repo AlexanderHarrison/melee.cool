@@ -931,10 +931,12 @@ int main(void) {
         }
     #endif
 
+    timer_start();
     init_clip_tables();
+    timer_elapsed("init clip tables");
     
     timer_start();
-    create_entries(1 << 10, 8);
+    // create_entries(1 << 16, 8);
     timer_elapsed("create entries");
     
     reply.buf = calloc(REPLY_SIZE, 1);

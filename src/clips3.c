@@ -80,7 +80,7 @@ AutoCompleteLookup tag_autocomplete(Str tag) {
 }
 
 static int filter_file(const struct dirent *entry) {
-    return entry->d_type == DT_REG && entry->d_name[0] != '!';
+    return entry->d_type == DT_REG;
 }
 
 #define TAG_MAX 32
@@ -403,8 +403,6 @@ static bool search_next(char *buf, EntrySearch *search) {
 }
 
 static bool search_prev(char *buf, EntrySearch *search) {
-    // printf("%u\n", )
-
     if (search->tag_count == 0)
         return search_prev_tagless(buf, search);
 
@@ -612,7 +610,8 @@ static void init_clip_tables(void) {
                 break;
 
             const char *tag_name = entries[temp->top[9 - entry_i].file_i]->d_name;
-            U32 tag_len = (U32)strlen(tag_name);
+            const char *tag_postfix = tag_name + temp->tag_prefix.len;
+            U32 tag_len = (U32)strlen(tag_postfix);
             autocomplete_lists_size += sizeof(U32) // tag entry count
                 + tag_len // tag name
                 + 1; // null byte
@@ -631,6 +630,7 @@ static void init_clip_tables(void) {
 
         // fill out entry count
         U32 *entry_count = (U32*)&autocomplete_lists[autocomplete_lists_size];
+        *entry_count = 0;
         autocomplete_lists_size += sizeof(U32);
         
         // fill out tag table sizes
@@ -664,7 +664,6 @@ static void init_clip_tables(void) {
         
         // align to 4 for next U32
         autocomplete_lists_size = (autocomplete_lists_size + 3U) & ~3U;
-        
     }
     
     for (U32 file_i = 0; file_i < filenum; ++file_i)
@@ -673,12 +672,3 @@ static void init_clip_tables(void) {
     free(entries);
     munmap(temp_list, 1U << 30);
 }
-
-// static void init_clip_tables(void) {
-//     tag_table = calloc(TAG_TABLE_SIZE, sizeof(*tag_table));
-//     meta = calloc(METASIZE, sizeof(*meta));
-//     tag_names = calloc(TAG_NAMES_SIZE, sizeof(*tag_names));
-//     autocomplete_lists = calloc(AUTOCOMPLETE_LISTS_SIZE, sizeof(*autocomplete_lists));
-//     autocomplete_table = calloc(AUTOCOMPLETE_TABLE_SIZE, sizeof(*autocomplete_table));
-// }
-

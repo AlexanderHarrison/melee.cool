@@ -8,7 +8,7 @@ else
     BASE_FLAGS="-ggdb"
 fi
 WARN_FLAGS="-Wall -Wextra -Wno-char-subscripts -Wno-unused-function -Wuninitialized -Wdisabled-optimization -Winit-self -Wlogical-op -Wmissing-include-dirs -Wredundant-decls -Wshadow -Wundef -Wstrict-prototypes -Wpointer-to-int-cast -Wint-to-pointer-cast -Wconversion -Wduplicated-cond -Wduplicated-branches -Wformat=2 -Wshift-overflow=2 -Wint-in-bool-context -Wvector-operation-performance -Wvla -Wdisabled-optimization -Wredundant-decls -Wmissing-parameter-type -Wold-style-declaration -Wlogical-not-parentheses -Waddress -Wmemset-transposed-args -Wmemset-elt-size -Wsizeof-pointer-memaccess -Wwrite-strings -Wtrampolines -Werror=implicit-function-declaration"
-F_FLAGS="-funsigned-char -fmax-errors=1"
+F_FLAGS="-funsigned-char -fmax-errors=1 -fsanitize=address -fsanitize=undefined"
 PATH_FLAGS="-I. -I/usr/include -I/usr/lib -I/usr/local/lib -I/usr/local/include"
 LINK_FLAGS="-lssl -lcrypto"
 
