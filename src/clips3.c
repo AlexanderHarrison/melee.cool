@@ -177,7 +177,8 @@ static void tag_entry_table_close(MetaIdx *table, TagEntry *tag_entry) {
 static void realloc_tag_table(void) {
     printf("realloc\n");
     U32 new_tag_table_cap = tag_table_cap * 2;
-    TagEntry *new_table = reallocarray(tag_table, new_tag_table_cap, sizeof(*tag_table));
+    
+    TagEntry *new_table = calloc(new_tag_table_cap, sizeof(*tag_table));
     
     for (USize i = 0; i < tag_table_cap; ++i) {
         TagEntry *old_entry = &tag_table[i];
@@ -195,6 +196,7 @@ static void realloc_tag_table(void) {
         }
     }
     
+    free(tag_table);
     tag_table = new_table;
     tag_table_cap = new_tag_table_cap;
 }
@@ -328,6 +330,9 @@ static bool search_prev_tagless(char *buf, EntrySearch *search) {
     if (tag_entry_table == NULL)
         return false;
     
+    if (search_i > tag_entry->table_size)
+        search_i = tag_entry->table_size;
+
     search_i--;
     search->tag_search_idx[0] = search_i;
     U32 i = tag_entry->table_size - search_i - 1;
@@ -341,8 +346,17 @@ static bool search_next(char *buf, EntrySearch *search) {
     if (search->tag_count == 0)
         return search_next_tagless(buf, search);
     
-    if (search->tag_entry[0].table_size == 0)
-        return false;
+    // clamp
+    for (USize i = 0; i < search->tag_count; ++i) {
+        TagEntry *tag_entry = &search->tag_entry[i];
+        U32 tag_entry_count = tag_entry->table_size;
+        if (tag_entry_count == 0)
+            return false;
+
+        U32 tag_search_idx = search->tag_search_idx[i];
+        if (tag_search_idx >= tag_entry_count)
+            search->tag_search_idx[i] = tag_entry_count;
+    }
     
     MetaIdx *tag_entry_tables[TAG_MAX];
     for (U32 i = 0; i < search->tag_count; ++i) {
@@ -406,8 +420,17 @@ static bool search_prev(char *buf, EntrySearch *search) {
     if (search->tag_count == 0)
         return search_prev_tagless(buf, search);
 
-    if (search->tag_entry[0].table_size == 0)
-        return false;
+    // clamp
+    for (USize i = 0; i < search->tag_count; ++i) {
+        TagEntry *tag_entry = &search->tag_entry[i];
+        U32 tag_entry_count = tag_entry->table_size;
+        if (tag_entry_count == 0)
+            return false;
+
+        U32 tag_search_idx = search->tag_search_idx[i];
+        if (tag_search_idx >= tag_entry_count)
+            search->tag_search_idx[i] = tag_entry_count;
+    }
     
     MetaIdx *tag_entry_tables[TAG_MAX];
     for (U32 i = 0; i < search->tag_count; ++i) {
@@ -426,18 +449,6 @@ static bool search_prev(char *buf, EntrySearch *search) {
     // TODO - when should we binary search instead of linear scan?
     MetaIdx idx_max = 0;
     U32 tag_count = search->tag_count;
-    
-    // clamp
-    for (USize i = 0; i < tag_count; ++i) {
-        TagEntry *tag_entry = &search->tag_entry[i];
-        U32 tag_entry_count = tag_entry->table_size;
-        if (tag_entry_count == 0)
-            return false;
-
-        U32 tag_search_idx = search->tag_search_idx[i];
-        if (tag_search_idx >= tag_entry_count)
-            search->tag_search_idx[i] = tag_entry_count;
-    }
     
     USize tag_i = 0;
     bool ret = true;

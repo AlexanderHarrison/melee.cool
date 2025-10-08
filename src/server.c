@@ -9,10 +9,6 @@
 #define MG_TLS MG_TLS_OPENSSL
 #include "vendor/mongoose.h"
 
-#ifdef TEST
-    void test(void);
-#endif
-
 typedef double F64;
 typedef float F32;
 typedef uint64_t U64;
@@ -28,6 +24,11 @@ typedef ssize_t ISize;
 typedef struct mg_str Str;
 #define countof(A) (sizeof(A) / sizeof(*(A)))
 #define ConstStr(A) (Str) { (char *)A, sizeof(A)-1 }
+
+#ifdef TEST
+    void test(void);
+    static void create_entries(U32 count, U32 tag_count);
+#endif
 
 static struct timespec timer;
 static void timer_start(void) {
@@ -483,10 +484,12 @@ USize split_idx(Str idx, U32 idxbuf[TAG_MAX]) {
     return idx_count;
 }
 
+// Returns number of tags.
+// Will only fill TAG_MAX tags, even if returned number is greater.
 USize split_tags(Str tags, Str tagbuf[TAG_MAX]) {
     USize tag_i = 0;
     USize tag_count = 0;
-    while (tag_count != TAG_MAX) {
+    while (true) {
         // skip whitespace
         while (tag_i != tags.len && tags.buf[tag_i] == ' ')
             tag_i++;
@@ -501,7 +504,9 @@ USize split_tags(Str tags, Str tagbuf[TAG_MAX]) {
             break;
         
         Str tag = { tags.buf + tag_start, tag_end - tag_start };
-        tagbuf[tag_count++] = tag;
+        if (tag_count < TAG_MAX)
+            tagbuf[tag_count] = tag;
+        tag_count++;
     }
 
     return tag_count;
@@ -735,12 +740,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 Str rev_str = mg_http_var(hm->body, mg_str("rev"));
                 bool reverse_search = rev_str.len != 0;
 
-                mg_print_str("- search idx str: ", search_idx_str);
-                U32 search_idx = parse_uint_hex(search_idx_str);
-                printf("- search idx: %x\n", search_idx);
-
                 EntrySearch search = { 0 };
-                
                 U32 idx[TAG_MAX];
                 U32 idx_count = (U32)split_idx(search_idx_str, idx);
                 for (USize i = 0; i < idx_count; ++i)
@@ -750,10 +750,26 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 Str tags[TAG_MAX];
                 decode_uri(&tags_str_decoded);
                 USize tag_count = split_tags(tags_str_decoded, tags);
-                
+                if (tag_count > TAG_MAX) {
+                    reply_error("Too many tags.");
+                    reply_send(c);
+                    return;
+                }
                 for (USize i = 0; i < tag_count; ++i) {
                     Str tag = tags[i];
-                    mg_print_str("- Find tag: ", tag);
+                    
+                    if (invalid_tag(tag)) {
+                        reply_error("Invalid tag. Tags must only contain letters, digits, and underscores.");
+                        reply_send(c);
+                        return;
+                    }
+                    
+                    if (tag.len > TAG_LEN_MAX) {
+                        reply_error("Tag is too long.");
+                        reply_send(c);
+                        return;
+                    }
+
                     search_tag(&search, tag);
                 }
 
@@ -825,6 +841,14 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                     reply_send(c);
                     return;
                 }
+                
+                for (USize i = 0; i < title.len; ++i) {
+                    if (title.buf[i] == 0) {
+                        reply_error("Title cannot contain null bytes.");
+                        reply_send(c);
+                        return;
+                    }
+                }
 
                 if (link.len == 0) {
                     reply_error("Post must have a link.");
@@ -849,6 +873,11 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
 
                 Str tags[TAG_MAX];
                 USize tag_count = split_tags(tags_str, tags);
+                if (tag_count > TAG_MAX) {
+                    reply_error("Too many tags.");
+                    reply_send(c);
+                    return;
+                }
                 for (USize i = 0; i < tag_count; ++i) {
                     Str tag = tags[i];
                     
@@ -896,7 +925,18 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 
                 reply_send(c);
             }
+            #ifdef TEST
+                else if (mg_match(hm->uri, mg_str("/populate"), NULL)) {
+                    create_entries(1 << 12, 32);
+                    printf("populating");
+                    reply_clear_error();
+                    reply_send(c);
+                }
+            #endif
         }
+    }
+    else if (ev == MG_EV_ERROR) {
+        printf("Server error: %s\n", (char *) ev_data);
     }
     else if (ev == MG_EV_ACCEPT && c->is_tls) {
         struct mg_tls_opts opts = {
@@ -946,9 +986,13 @@ static void create_entries(U32 count, U32 tag_count) {
 
 int main(void) {
     #ifdef TEST
+        system("rm -rf clips");
+
+        mg_log_set(MG_LL_ERROR);
         int pid = fork();
         if (pid == 0) {
             test();
+            kill(0, SIGKILL);
             return 0;
         }
     #endif
@@ -966,8 +1010,6 @@ int main(void) {
     reply_headers.buf = calloc(REPLY_SIZE, 1);
     memcpy(reply_headers.buf, default_reply_headers, sizeof(default_reply_headers)-1);
     reply_headers.len = sizeof(default_reply_headers)-1;
-
-    mg_log_set(MG_LL_DEBUG);
 
     struct mg_mgr mgr;
     mg_mgr_init(&mgr);
