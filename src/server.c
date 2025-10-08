@@ -698,6 +698,9 @@ const char *construct_metadata(
     }
     
     MetaIdx entry = create_entry((Str) { metadata, meta_len });
+    if (entry == META_NULL) {
+        return "Error creating entry! Please contact server owner.";
+    }
     
     mg_print_str("- Added title: ", title);
     mg_print_str("- Added link: ", link);

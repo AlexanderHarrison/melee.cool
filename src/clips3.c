@@ -1,5 +1,3 @@
-// TODO: comprehensive testing
-
 typedef U32 HashKey;
 typedef U32 MetaIdx;
 
@@ -34,6 +32,7 @@ AutoCompleteHashEntry *autocomplete_table;
 U32 autocomplete_table_cap;
 
 #define META_MAX 2048
+#define META_NULL 0xFFFFFFFFU
 
 static Str all = ConstStr("!all");
 
@@ -239,36 +238,37 @@ static void tag_entry(MetaIdx meta_idx, Str tag) {
     
     int fd = openat(tagdir_fd, temp_pathname, O_WRONLY|O_APPEND|O_CREAT, S_IRUSR|S_IWUSR);
     if (fd < 0) {
-        while (1);
-        // IDK WHAT TO DO HERE TODO TODO TODO TODO --------------------------------------
+        printf("Failed to open tag file for '%.*s'\n", (int)tag.len, tag.buf);
+        return;
     }
-
-    ssize_t ret = write(fd, (char*)&meta_idx, sizeof(meta_idx));
-    if (ret != sizeof(U32)) {
-        while (1);
-        // IDK WHAT TO DO HERE TODO TODO TODO TODO --------------------------------------
+    
+    USize written = 0;
+    while (written != 4) {
+        ssize_t ret = write(fd, (char*)&meta_idx + written, sizeof(meta_idx) - written);
+        if (ret == -1) {
+            printf("Failed to append tag file for '%.*s'\n", (int)tag.len, tag.buf);
+            close(fd);
+            return;
+        }
+        written += (USize)ret;
     }
     
     tag_entry->table_size++;
-    
-    if (close(fd) != 0) {
-        while (1);
-        // IDK WHAT TO DO HERE TODO TODO TODO TODO --------------------------------------
-    }
+    close(fd);
 }
 
 static MetaIdx create_entry(Str new_meta) {
     off_t seek_ret = lseek(meta_fd, 0, SEEK_END);
     if (seek_ret < 0) {
-        while (1);
-        // IDK WHAT TO DO HERE TODO TODO TODO TODO --------------------------------------
+        printf("Failed to seek metadata file\n");
+        return META_NULL;
     }
     MetaIdx meta_idx = (MetaIdx)seek_ret;
     
     ssize_t ret = write(meta_fd, new_meta.buf, new_meta.len);
     if (ret != (ssize_t)new_meta.len) {
-        while (1);
-        // IDK WHAT TO DO HERE TODO TODO TODO TODO --------------------------------------
+        printf("Failed to append metadata file\n");
+        return META_NULL;
     }
     
     tag_entry(meta_idx, all);
@@ -513,8 +513,8 @@ static void init_clip_tables(void) {
     struct dirent **entries;
     int ret = scandir(tagdir, &entries, filter_file, NULL);
     if (ret < 0) {
-        while (1);
-        // IDK WHAT TO DO HERE TODO TODO TODO TODO --------------------------------------
+        printf("Failed to init clip clip tables: scandir failed.\n");
+        exit(1);
     }
     U32 filenum = (U32)ret;
     
@@ -546,8 +546,8 @@ static void init_clip_tables(void) {
     // I don't feel like counting
     AutoCompleteTempList *temp_list = mmap(NULL, 1U << 30, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (temp_list == MAP_FAILED) {
-        while (1);
-        // IDK WHAT TO DO HERE TODO TODO TODO TODO --------------------------------------
+        printf("Failed to init clip clip tables: map failed.\n");
+        exit(1);
     }
     U32 temp_list_size = 0;
 
@@ -558,8 +558,8 @@ static void init_clip_tables(void) {
         struct stat stat;
         ret = fstatat(tagdir_fd, filename, &stat, 0);
         if (ret < 0) {
-            while (1);
-            // IDK WHAT TO DO HERE TODO TODO TODO TODO --------------------------------------
+            printf("Failed to init clip clip tables: fstatat failed.\n");
+            exit(1);
         }
         U32 tag_size = (U32)stat.st_size / sizeof(MetaIdx);
 
