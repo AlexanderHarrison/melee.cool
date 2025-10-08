@@ -1,0 +1,12 @@
+[Unit]
+Description=melee.cool webserver
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+RuntimeMaxSec=7d
+User=root
+ExecStart=/root/melee.cool/build/server

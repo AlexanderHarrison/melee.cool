@@ -1,0 +1,16 @@
+[Unit]
+Description=melee.cool backup
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+ExecStart=/root/melee.cool/backup.sh
+
+[Timer]
+OnCalendar=daily
+AccuracySec=12h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
