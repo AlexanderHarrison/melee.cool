@@ -544,7 +544,7 @@ static void init_clip_tables(void) {
     } AutoCompleteTempList;
     
     // I don't feel like counting
-    AutoCompleteTempList *temp_list = mmap(NULL, 1U << 30, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    AutoCompleteTempList *temp_list = mmap(NULL, 1U << 29, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (temp_list == MAP_FAILED) {
         printf("Failed to init clip clip tables: map failed.\n");
         exit(1);
@@ -685,5 +685,5 @@ static void init_clip_tables(void) {
         free(entries[file_i]);
         
     free(entries);
-    munmap(temp_list, 1U << 30);
+    munmap(temp_list, 1U << 29);
 }

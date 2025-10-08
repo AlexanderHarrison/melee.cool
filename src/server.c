@@ -1016,6 +1016,7 @@ int main(void) {
 
     struct mg_mgr mgr;
     mg_mgr_init(&mgr);
+    mg_log_set(MG_LL_ERROR);
     
     mg_http_listen(&mgr, "http://0.0.0.0:8000", ev_handler, NULL);
     mg_http_listen(&mgr, "http://0.0.0.0:80", ev_handler, NULL);
