@@ -11,3 +11,6 @@ RuntimeMaxSec=7d
 User=root
 WorkingDirectory=/root/melee.cool/
 ExecStart=/root/melee.cool/build/server
+
+[Install]
+WantedBy=multi-user.target
