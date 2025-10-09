@@ -702,6 +702,58 @@ void test(void) {
     msg_send(c);
     expect_reply_err(true);
     
+    // QUOTE TESTS ------------------------------------
+    
+    Str quote_title = ConstStr("a--\"--b");
+    Str quote_link = ConstStr("https://goo\"gle.com");
+    Str quote_tag = ConstStr("ab\"c");
+    
+    start_test("post clip with quote title");
+    msg_post("/post-clip");
+    msg_var_slice("title", quote_title);
+    msg_var("link", "https://google.com");
+    msg_var("tags", "1 2 3 4");
+    msg_send(c);
+    expect_reply_err(false);
+    
+    start_test("post clip with quote link");
+    msg_post("/post-clip");
+    msg_var("title", "title");
+    msg_var_slice("link", quote_link);
+    msg_var("tags", "1 2 3 4");
+    msg_send(c);
+    expect_reply_err(true);
+    
+    start_test("post clip with quote tag");
+    msg_post("/post-clip");
+    msg_var("link", "https://google.com");
+    msg_var("title", "title");
+    msg_var_slice("tags", quote_tag);
+    msg_send(c);
+    expect_reply_err(true);
+    
+    start_test("find clips quote idx");
+    msg_post("/find-clips");
+    msg_var_slice("idx", (Str) { (char*)"1\"2", 3 });
+    msg_send(c);
+    expect_reply_err(false);
+    expect_reply_contains("class=clip");
+    
+    start_test("find clips quote rev");
+    msg_post("/find-clips");
+    msg_var("idx", "10");
+    msg_var_slice("rev", (Str) { (char*)"\"", 1 });
+    msg_send(c);
+    expect_reply_err(false);
+    expect_reply_contains("class=clip");
+    
+    start_test("find clips quote tag");
+    msg_post("/find-clips");
+    msg_var("idx", "10");
+    msg_var_slice("tags", quote_tag);
+    msg_send(c);
+    expect_reply_err(true);
+    
     // FINISHED! ------------------------------------------
     
     printf("## Tests all good! ##\n");
