@@ -30,6 +30,10 @@ body {
     }
 }
 
+li {
+    text-align: left;
+}
+
 .sidebar a {
   display: block;
   padding: 8px 16px;
@@ -77,6 +81,14 @@ header {
 spaced {
     display: inline;
     margin-right: 10pt;
+}
+
+summary {
+    cursor: pointer;
+    color: var(--hl);
+}
+summary:hover {
+    text-decoration: underline;
 }
 
 a {
