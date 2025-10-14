@@ -484,6 +484,14 @@ USize split_idx(Str idx, U32 idxbuf[TAG_MAX]) {
     return idx_count;
 }
 
+static void make_lowercase(Str s) {
+    for (USize i = 0; i < s.len; ++i) {
+        char c = s.buf[i];
+        if ('A' <= c && c <= 'Z')
+            s.buf[i] = c - 'A' + 'a';
+    }
+}
+
 // Returns number of tags.
 // Will only fill TAG_MAX tags, even if returned number is greater.
 USize split_tags(Str tags, Str tagbuf[TAG_MAX]) {
@@ -760,6 +768,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 }
                 for (USize i = 0; i < tag_count; ++i) {
                     Str tag = tags[i];
+                    make_lowercase(tag);
                     
                     if (invalid_tag(tag)) {
                         reply_error("Invalid tag. Tags must only contain letters, digits, and underscores.");
@@ -883,6 +892,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 }
                 for (USize i = 0; i < tag_count; ++i) {
                     Str tag = tags[i];
+                    make_lowercase(tag);
                     
                     if (invalid_tag(tag)) {
                         reply_error("Invalid tag. Tags must only contain letters, digits, and underscores.");
@@ -912,6 +922,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
             }
             else if (mg_match(hm->uri, mg_str("/tag-autocomplete"), NULL)) {
                 Str prefix = mg_http_var(hm->body, mg_str("tag-prefix"));
+                make_lowercase(prefix);
                 AutoCompleteLookup ac = tag_autocomplete(prefix);
                 
                 for (U32 i = 0; i < ac.count; ++i) {
