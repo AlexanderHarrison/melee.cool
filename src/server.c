@@ -239,6 +239,7 @@ enum embed_mode {
     EMBED_YOUTUBE,
     EMBED_TWITCH_CLIP,
     EMBED_TWITCH_VIDEO,
+    EMBED_TWITTER_POST,
 };
 
 /* 
@@ -364,7 +365,7 @@ void reply_clip(MetaIdx meta_idx, U32 report_flags) {
     else if (embed_mode == EMBED_TWITCH_CLIP) {
         reply_push_const("<iframe class=clip-embed preload=metadata width=400 height=225 allowfullscreen src=\"https://clips.twitch.tv/embed?clip=");
         reply_push_slice(embed, embed_len);
-        
+
         if (timestamp_len) {
             reply_push_const("&t=");
             reply_push_slice(timestamp, timestamp_len);
@@ -375,31 +376,37 @@ void reply_clip(MetaIdx meta_idx, U32 report_flags) {
     else if (embed_mode == EMBED_TWITCH_VIDEO) {
         reply_push_const("<iframe class=clip-embed preload=metadata width=400 height=225 allowfullscreen src=\"https://player.twitch.tv/?video=v");
         reply_push_slice(embed, embed_len);
-        
+
         if (timestamp_len) {
             reply_push_const("&t=");
             reply_push_slice(timestamp, timestamp_len);
         }
-        
+
         reply_push_const("&autoplay=false&parent=melee.cool\"></iframe>");
     }
-    
+    else if (embed_mode == EMBED_TWITTER_POST) {
+        reply_push_const("<div class=clip-embed>");
+        reply_push_const("<script>embed_twitter_post(document.currentScript.parentElement, '");
+        reply_push_slice(embed, embed_len);
+        reply_push_const("');</script></div>");
+    }
+
     reply_push_const("<div class=tags>");
-        Str tag = { tags, 0 };
-        while (true) {
-            char c = *(tags++);
-            if (c == '\n') {
-                reply_push_const("<div class=tag>");
-                    reply_push_slice(tag.buf, tag.len);
-                    tag.len = 0;
-                    tag.buf = tags;
-                reply_push_const("</div>");
-            }
-            else if (c == 0)
-                break;
-            else
-                tag.len++;
+    Str tag = { tags, 0 };
+    while (true) {
+        char c = *(tags++);
+        if (c == '\n') {
+            reply_push_const("<div class=tag>");
+                reply_push_slice(tag.buf, tag.len);
+                tag.len = 0;
+                tag.buf = tags;
+            reply_push_const("</div>");
         }
+        else if (c == 0)
+            break;
+        else
+            tag.len++;
+    }
     reply_push_const("</div>");
 
     reply_push_const("</div>");
@@ -649,6 +656,9 @@ void convert_link_to_embed(Str link, EmbedInfo *embed) {
     static const Str twitch_tv = ConstStr("twitch.tv/");
     static const Str twitch_video = ConstStr("/videos/");
     static const Str twitch_clip = ConstStr("/clip/");
+    static const Str x_com = ConstStr("x.com/");
+    static const Str twitter_com = ConstStr("twitter.com/");
+    static const Str twitter_post = ConstStr("/status/");
     static const Str timestamp_attr_qm = ConstStr("?t=");
     static const Str timestamp_attr_and = ConstStr("&t=");
     
@@ -675,6 +685,12 @@ void convert_link_to_embed(Str link, EmbedInfo *embed) {
         else if (str_contains(link, twitch_video, &loc)) {
             mode = EMBED_TWITCH_VIDEO;
             id = (Str) { link.buf + loc + twitch_video.len, 0 };
+        }
+    }
+    else if (str_contains(link, x_com, &loc) || str_contains(link, twitter_com, &loc)) {
+        if (str_contains(link, twitter_post, &loc)) {
+            mode = EMBED_TWITTER_POST;
+            id = (Str) { link.buf + loc + twitter_post.len, 0 };
         }
     }
     
@@ -827,7 +843,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
         mg_print_str("URI: ", hm->uri);
         
         if (mg_match(hm->method, mg_str("GET"), NULL)) {
-            static struct mg_http_serve_opts opts = { .root_dir = "web_root" };
+            struct mg_http_serve_opts opts = { .root_dir = "web_root" };
             mg_http_serve_dir(c, hm, &opts);
         }
         else if (mg_match(hm->method, mg_str("POST"), NULL)) {

@@ -6,6 +6,218 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Clip Dump</title>
     <script src="/htmx.js"></script>
+    <script src="/jquery.js"></script>
+    
+<style>
+#plug {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 5px;
+    font-size: 12px;
+}
+
+input {
+    background-color: var(--fg);
+}
+button, input[type=submit] {
+    background-color: var(--fg);
+}
+
+#search-and-clips {
+    background-color: var(--bg-l);
+    border-radius: 10px;
+    padding: 10px 0 10px 0;
+}
+
+#clips {
+    text-align: center;
+}
+
+#post {
+    background-color: var(--bg-l);
+    border-radius: 10px;
+    width: 400px;
+    margin: 20px auto 20px auto;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 20px 10px 20px;
+}
+
+.post-row {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    padding: 2px;
+    
+    label {
+        text-align: start;
+        flex-grow: 1;
+    }
+    
+    input {
+        width: 340px;
+    }
+}
+
+#post-form {
+    text-align: center;
+}
+    
+#err {
+    color: var(--red);
+    text-align: center;
+    padding-bottom: 5px;
+}
+
+#search {
+    display: flex;
+    justify-content: center;
+    padding: 5px;
+}
+
+#pages {
+    display: flex;
+    justify-content: center;
+    padding: 5px;
+}
+
+.clip {
+    padding-top: 15px;
+    line-height: 1.2;
+    position: relative;
+}
+.clip-title {
+    font-size: 20px;
+    text-align: center;
+}
+
+.clip-reported-indicator {
+    position: absolute;
+    display: inline-block;
+    line-height: 0;
+    right: 40px;
+    border-radius: 10px;
+}
+
+.clip-menu-button {
+    display: none;
+    position: absolute;
+    line-height: 0;
+    border-radius: 10px;
+    right: 10px;
+}
+.clip-menu-button-reported {
+    display: inline-block;
+    line-height: 1.5;
+}
+.clip-menu-button:hover {
+    background: var(--bg);
+    cursor: pointer;
+}
+.clip:hover .clip-menu-button {
+    display: inline-block;
+}
+.clip-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 10;
+    font-size: 12px;
+    background-color: black;
+    color: var(--fg);
+    line-height: 0;
+}
+
+.clip-menu-button:hover .clip-menu {
+    display: block;
+}
+.clip-menu-item {
+    display: block;
+    padding: 10px 2px;
+    white-space: nowrap;
+    cursor: pointer;
+    border-radius: 5px;
+    text-align: left;
+}
+.clip-menu-item:hover {
+    background-color: var(--bg);
+}
+
+.clip-embed {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    max-width: 400px;
+    /* max-height: 225px; */
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    border: none;
+}
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    flex-direction: row;
+}
+.tag {
+    padding-right: 5px;
+    line-height: 1;
+    font-size: 12px;
+}
+
+/* only display autocomplete when input is focused */
+#search-autocomplete:hover, #post-autocomplete:hover {
+    display: block;
+}
+#search-tags:focus + #search-autocomplete {
+    display: block;
+}
+#post-tags:focus + #post-autocomplete {
+    display: block;
+}
+#search-tags {
+    width: 340px;
+}
+#search-autocomplete, #post-autocomplete {
+    display: none;
+    z-index: 10;
+    background-color: black;
+    position: absolute;
+    min-width: 100px;
+    font-size: 12px;
+}
+#post-autocomplete {
+    transform: translate(50px, 24px);
+} 
+
+.autocomplete-item:hover {
+    background-color: var(--bg);
+}
+.autocomplete-item {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    border-radius: 5px;
+    background-color: black;
+    color: var(--fg);
+    border: none;
+    display: block;
+    width: 100%;
+}
+.autocomplete-tag {
+    display: inline;
+    float: left;
+    padding-right: 2px;
+}
+.autocomplete-count {
+    display: inline;
+    float: right;
+    padding-left: 2px;
+}
+</style>
+
 </head>
 <body>
 
@@ -110,6 +322,16 @@
 </div>
 
 <script>
+function embed_twitter_post(embed_obj, post_id) {
+    const url = 'https://publish.twitter.com/oembed?dnt=true&theme=dark&width=400&hide_thread=true&url=https%3A%2F%2Ftwitter.com%2FInterior%2Fstatus%2F' + post_id;
+    $.ajax({
+        type: "GET",
+        url: url,
+        dataType: "jsonp",
+        success: (data) => $(embed_obj).html(data.html),
+    });
+}
+
 function tag_autocomplete(ele) {
     const tag = ele.firstChild.textContent;
     const input = ele.parentElement.previousElementSibling;
@@ -161,14 +383,12 @@ function report(obj, reason, meta_idx) {
     const values = { 'meta-idx': meta_idx, reason: reason };
     htmx.ajax('POST', '/report-clip', { swap: "none", values: values })
         .then(() => find_clips("idx-a", false));
-    // obj.parentElement.style.display = "none";
 }
 
 function unreport(obj, reason, meta_idx) {
     const values = { 'meta-idx': meta_idx, unreport: 1, reason: reason };
     htmx.ajax('POST', '/report-clip', { swap: "none", values: values })
         .then(() => find_clips("idx-a", false));
-    // obj.parentElement.style.display = "none";
 }
 
 find_clips("idx-a", false);
