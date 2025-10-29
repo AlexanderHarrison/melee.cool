@@ -35,6 +35,9 @@ U32 autocomplete_table_cap;
 #define META_NULL 0xFFFFFFFFU
 
 static Str all = ConstStr("!all");
+static Str reported_spam = ConstStr("!reported_spam");
+static Str reported_dup = ConstStr("!reported_dup");
+static Str reported_error = ConstStr("!reported_err");
 
 // lookup that the tag exists and the number of entries it has 
 static TagEntry *tag_table;
@@ -143,7 +146,7 @@ static bool read_metadata(char *buf, MetaIdx idx) {
     return true;
 }
 
-static MetaIdx *tag_entry_table_get(TagEntry *tag_entry, Str tag_name) {
+static MetaIdx *tag_entry_table_get_inner(TagEntry *tag_entry, Str tag_name, bool writable) {
     if (tag_entry->table_size == 0)
         return NULL;
 
@@ -151,11 +154,18 @@ static MetaIdx *tag_entry_table_get(TagEntry *tag_entry, Str tag_name) {
     memcpy(temp_pathname, tag_name.buf, tag_name.len);
     temp_pathname[tag_name.len] = 0;
     
-    int fd = openat(tagdir_fd, temp_pathname, O_RDONLY, S_IRUSR | S_IWUSR);
+    int fd = openat(tagdir_fd, temp_pathname, writable ? O_RDWR : O_RDONLY, S_IRUSR | S_IWUSR);
     if (fd < 0)
         return NULL;
     
-    MetaIdx *table = mmap(NULL, tag_entry->table_size * sizeof(U32), PROT_READ, MAP_PRIVATE, fd, 0); 
+    MetaIdx *table = mmap(
+        NULL,
+        tag_entry->table_size * sizeof(U32),
+        writable ? (PROT_READ | PROT_WRITE) : PROT_READ,
+        writable ? MAP_SHARED : MAP_PRIVATE,
+        fd, 0
+    );
+
     if (table == MAP_FAILED) {
         close(fd);
         return NULL;
@@ -169,12 +179,19 @@ static MetaIdx *tag_entry_table_get(TagEntry *tag_entry, Str tag_name) {
     return table;
 }
 
+static MetaIdx *tag_entry_table_get_rw(TagEntry *tag_entry, Str tag_name) {
+    return tag_entry_table_get_inner(tag_entry, tag_name, true);
+}
+
+static MetaIdx *tag_entry_table_get(TagEntry *tag_entry, Str tag_name) {
+    return tag_entry_table_get_inner(tag_entry, tag_name, false);
+}
+
 static void tag_entry_table_close(MetaIdx *table, TagEntry *tag_entry) {
     munmap(table, tag_entry->table_size);
 }
 
 static void realloc_tag_table(void) {
-    printf("realloc\n");
     U32 new_tag_table_cap = tag_table_cap * 2;
     
     TagEntry *new_table = calloc(new_tag_table_cap, sizeof(*tag_table));
@@ -296,39 +313,166 @@ static void search_tag(EntrySearch *search, Str tag) {
     search->tag_count++;
 }
 
+enum {
+    REPORT_SPAM,
+    REPORT_DUPLICATE,
+    REPORT_ERROR,
+
+    REPORT_NONE = -1,
+};
+
+// pretty inefficient, but there shouldn't be too many reported
+static void check_reported(U32 *reasons, MetaIdx *meta_indices, USize count) {
+    for (USize i = 0; i < count; ++i)
+        reasons[i] = 0;
+
+    TagEntry *te_spam = lookup_tag(reported_spam);
+    TagEntry *te_dup = lookup_tag(reported_dup);
+    TagEntry *te_err = lookup_tag(reported_error);
+    
+    if (te_spam == NULL || te_dup == NULL || te_dup == NULL)
+        return;
+
+    MetaIdx *tb_spam = tag_entry_table_get(te_spam, reported_spam);
+    if (tb_spam) {
+        for (USize i = 0; i < te_spam->table_size; ++i) {
+            MetaIdx spam = tb_spam[i];
+            for (USize j = 0; j < count; ++j)
+                if (spam == meta_indices[j])
+                    reasons[j] |= 1u << REPORT_SPAM;
+        }
+        tag_entry_table_close(tb_spam, te_spam);
+    }
+    
+    MetaIdx *tb_dup = tag_entry_table_get(te_dup, reported_dup);
+    if (tb_dup) {
+        for (USize i = 0; i < te_dup->table_size; ++i) {
+            MetaIdx dup = tb_dup[i];
+            for (USize j = 0; j < count; ++j)
+                if (dup == meta_indices[j])
+                    reasons[j] |= 1u << REPORT_DUPLICATE;
+        }
+        tag_entry_table_close(tb_dup, te_dup);
+    }
+    
+    MetaIdx *tb_err = tag_entry_table_get(te_err, reported_error);
+    if (tb_err) {
+        for (USize i = 0; i < te_err->table_size; ++i) {
+            MetaIdx err = tb_err[i];
+            for (USize j = 0; j < count; ++j)
+                if (err == meta_indices[j])
+                    reasons[j] |= 1u << REPORT_ERROR;
+        }
+        tag_entry_table_close(tb_err, te_err);
+    }
+}
+
+static void report_clip(MetaIdx meta_idx, int reason) {
+    U32 prev_reports;
+    check_reported(&prev_reports, &meta_idx, 1);
+
+    Str report_name;
+    if (reason == REPORT_SPAM) {
+        if (prev_reports & (1u << REPORT_SPAM))
+            return;
+        report_name = reported_spam;
+    } else if (reason == REPORT_DUPLICATE) {
+        if (prev_reports & (1u << REPORT_DUPLICATE))
+            return;
+        report_name = reported_dup;
+    } else if (reason == REPORT_ERROR) {
+        if (prev_reports & (1u << REPORT_ERROR))
+            return;
+        report_name = reported_error;
+    } else {
+        return;
+    }
+    
+    // prevent mass reporting
+    TagEntry *te = lookup_tag(report_name);
+    if (te == NULL) return;
+    if (te->table_size >= 256) return;
+
+    tag_entry(meta_idx, report_name);
+}
+
+static void unreport_clip(MetaIdx meta_idx, int reason) {
+    Str report_name;
+    if (reason == REPORT_SPAM) {
+        report_name = reported_spam;
+    } else if (reason == REPORT_DUPLICATE) {
+        report_name = reported_dup;
+    } else if (reason == REPORT_ERROR) {
+        report_name = reported_error;
+    } else {
+        return;
+    }
+    
+    TagEntry *te = lookup_tag(report_name);
+    if (te == NULL) return;
+    
+    MetaIdx *tag_entry_table = tag_entry_table_get_rw(te, report_name);
+    if (tag_entry_table == NULL) return;
+    
+    for (U32 i = 0; i < te->table_size; ++i) {
+        if (tag_entry_table[i] == meta_idx) {
+            U32 copy_num = te->table_size - i - 1;
+            memmove(
+                &tag_entry_table[i],
+                &tag_entry_table[i+1],
+                copy_num * sizeof(MetaIdx)
+            );
+            te->table_size--;
+            break;
+        }
+    }
+
+    tag_entry_table_close(tag_entry_table, te);
+    
+    // truncate file
+    char temp_pathname[TAG_LEN_MAX+1];
+    memcpy(temp_pathname, report_name.buf, report_name.len);
+    temp_pathname[report_name.len] = 0;
+    
+    int fd = openat(tagdir_fd, temp_pathname, O_WRONLY, S_IRUSR|S_IWUSR);
+    if (fd < 0) return;
+    ftruncate(fd, te->table_size * sizeof(MetaIdx));
+    close(fd);
+}
+
 // TODO single tag optimization?
 
-static bool search_next_tagless(char *buf, EntrySearch *search) {
+static MetaIdx search_next_tagless(EntrySearch *search) {
     // sort by newest using the all tag
     
     TagEntry *tag_entry = lookup_tag(all);
     MetaIdx search_i = search->tag_search_idx[0];
     if (search_i >= tag_entry->table_size)
-        return false;
+        return META_NULL;
 
     MetaIdx *tag_entry_table = tag_entry_table_get(tag_entry, all);
     if (tag_entry_table == NULL)
-        return false;
+        return META_NULL;
     
     search->tag_search_idx[0] = search_i + 1;
     U32 i = tag_entry->table_size - search_i - 1;
     MetaIdx meta_i = tag_entry_table[i];
     tag_entry_table_close(tag_entry_table, tag_entry);
 
-    return read_metadata(buf, meta_i);
+    return meta_i;
 }
 
-static bool search_prev_tagless(char *buf, EntrySearch *search) {
+static MetaIdx search_prev_tagless(EntrySearch *search) {
     // sort by newest using the all tag
     
     MetaIdx search_i = search->tag_search_idx[0];
     if (search_i == 0)
-        return false;
+        return META_NULL;
 
     TagEntry *tag_entry = lookup_tag(all);
     MetaIdx *tag_entry_table = tag_entry_table_get(tag_entry, all);
     if (tag_entry_table == NULL)
-        return false;
+        return META_NULL;
     
     if (search_i > tag_entry->table_size)
         search_i = tag_entry->table_size;
@@ -339,19 +483,19 @@ static bool search_prev_tagless(char *buf, EntrySearch *search) {
     MetaIdx meta_i = tag_entry_table[i];
     tag_entry_table_close(tag_entry_table, tag_entry);
     
-    return read_metadata(buf, meta_i);
+    return meta_i;
 }
 
-static bool search_next(char *buf, EntrySearch *search) {
+static MetaIdx search_next(EntrySearch *search) {
     if (search->tag_count == 0)
-        return search_next_tagless(buf, search);
+        return search_next_tagless(search);
     
     // clamp
     for (USize i = 0; i < search->tag_count; ++i) {
         TagEntry *tag_entry = &search->tag_entry[i];
         U32 tag_entry_count = tag_entry->table_size;
         if (tag_entry_count == 0)
-            return false;
+            return META_NULL;
 
         U32 tag_search_idx = search->tag_search_idx[i];
         if (tag_search_idx >= tag_entry_count)
@@ -368,14 +512,14 @@ static bool search_next(char *buf, EntrySearch *search) {
         if (tag_entry_tables[i] == NULL) {
             for (; i != 0; --i)
                 tag_entry_table_close(tag_entry_tables[i-1], &search->tag_entry[i-1]);
-            return false;
+            return META_NULL;
         }
     }
     
     // TODO - when should we binary search instead of linear scan?
     MetaIdx idx_min = 0xFFFFFFFF;
     
-    bool ret;
+    MetaIdx ret;
     U32 tag_i = 0;
     U32 tag_count = search->tag_count;
     while (1) {
@@ -383,7 +527,7 @@ static bool search_next(char *buf, EntrySearch *search) {
         U32 tag_entry_count = tag_entry->table_size;
         U32 tag_search_idx = search->tag_search_idx[tag_i];
         if (tag_search_idx >= tag_entry_count) {
-            ret = false;
+            ret = META_NULL;
             break;
         }
         U32 tag_entry_idx = tag_entry_count - tag_search_idx - 1;
@@ -404,7 +548,7 @@ static bool search_next(char *buf, EntrySearch *search) {
             
             // return if all tags found for this entry
             if (tag_i == tag_count) {
-                ret = read_metadata(buf, idx_min);
+                ret = idx_min;
                 break;
             }
         }
@@ -416,16 +560,16 @@ static bool search_next(char *buf, EntrySearch *search) {
     return ret;
 }
 
-static bool search_prev(char *buf, EntrySearch *search) {
+static MetaIdx search_prev(EntrySearch *search) {
     if (search->tag_count == 0)
-        return search_prev_tagless(buf, search);
+        return search_prev_tagless(search);
 
     // clamp
     for (USize i = 0; i < search->tag_count; ++i) {
         TagEntry *tag_entry = &search->tag_entry[i];
         U32 tag_entry_count = tag_entry->table_size;
         if (tag_entry_count == 0)
-            return false;
+            return META_NULL;
 
         U32 tag_search_idx = search->tag_search_idx[i];
         if (tag_search_idx >= tag_entry_count)
@@ -442,7 +586,7 @@ static bool search_prev(char *buf, EntrySearch *search) {
         if (tag_entry_tables[i] == NULL) {
             for (; i != 0; --i)
                 tag_entry_table_close(tag_entry_tables[i-1], &search->tag_entry[i-1]);
-            return false;
+            return META_NULL;
         }
     }
     
@@ -451,14 +595,14 @@ static bool search_prev(char *buf, EntrySearch *search) {
     U32 tag_count = search->tag_count;
     
     USize tag_i = 0;
-    bool ret = true;
+    MetaIdx ret;
     while (1) {
         TagEntry *tag_entry = &search->tag_entry[tag_i];
         U32 tag_entry_count = tag_entry->table_size;
         U32 tag_search_idx = search->tag_search_idx[tag_i];
         
         if (tag_search_idx == 0) {
-            ret = false;
+            ret = META_NULL;
             break;
         }
         --tag_search_idx;
@@ -480,7 +624,7 @@ static bool search_prev(char *buf, EntrySearch *search) {
             
             // return if all tags found for this entry
             if (tag_i == tag_count) {
-                ret = read_metadata(buf, idx_max);
+                ret = idx_max;
                 break;
             }
         }

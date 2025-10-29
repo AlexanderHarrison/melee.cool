@@ -14,6 +14,21 @@ body {
     line-height: 1.5; 
 }
 
+@font-face {
+  font-family: 'Noto Color Emoji';
+  font-style: normal;
+  font-weight: 400;
+  src: url(Emoji.woff2) format('woff2');
+  unicode-range: U+2693, U+26e9-26ea, U+26f1-26f2, U+26f4-26f5, U+26fa, U+26fd, U+2708, U+fe0f, U+1f301, U+1f303, U+1f306-1f307, U+1f309, U+1f310, U+1f3a0-1f3a2, U+1f3aa, U+1f3cd-1f3ce, U+1f3d5, U+1f3d7-1f3db, U+1f3df-1f3e6, U+1f3e8-1f3ed, U+1f3ef-1f3f0, U+1f488, U+1f492, U+1f4ba, U+1f54b-1f54d, U+1f5fa-1f5ff, U+1f680-1f6a2, U+1f6a4-1f6a8, U+1f6b2, U+1f6d1, U+1f6d5-1f6d6, U+1f6dd-1f6df, U+1f6e2-1f6e5, U+1f6e9, U+1f6eb-1f6ec, U+1f6f3-1f6f6, U+1f6f8, U+1f6fa-1f6fb, U+1f9bc-1f9bd, U+1f9ed, U+1f9f3, U+1fa7c;
+}
+
+.emoji {
+    display: inline;
+    font-family: "Noto Color Emoji";
+    font-style: normal;
+    font-weight: 400;
+}
+
 .sidebar {
     position: fixed;
     top: 0;
@@ -117,6 +132,10 @@ a:visited {
     text-align: center;
 }
 
+circle {
+    fill: var(--fg);
+}
+
 /* #################### CLIPS #################### */
 
 #plug {
@@ -196,11 +215,66 @@ button, input[type=submit] {
 .clip {
     padding-top: 15px;
     line-height: 1.2;
+    position: relative;
 }
 .clip-title {
     font-size: 20px;
     text-align: center;
 }
+
+.clip-reported-indicator {
+    position: absolute;
+    display: inline-block;
+    line-height: 0;
+    right: 40px;
+    border-radius: 10px;
+}
+
+.clip-menu-button {
+    display: none;
+    position: absolute;
+    line-height: 0;
+    border-radius: 10px;
+    right: 10px;
+}
+.clip-menu-button-reported {
+    display: inline-block;
+    line-height: 1.5;
+}
+.clip-menu-button:hover {
+    background: var(--bg);
+    cursor: pointer;
+}
+.clip:hover .clip-menu-button {
+    display: inline-block;
+}
+.clip-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 10;
+    font-size: 12px;
+    background-color: black;
+    color: var(--fg);
+    line-height: 0;
+}
+
+.clip-menu-button:hover .clip-menu {
+    display: block;
+}
+.clip-menu-item {
+    display: block;
+    padding: 10px 2px;
+    white-space: nowrap;
+    cursor: pointer;
+    border-radius: 5px;
+    text-align: left;
+}
+.clip-menu-item:hover {
+    background-color: var(--bg);
+}
+
 .clip-embed {
     padding-top: 5px;
     padding-bottom: 5px;
@@ -264,8 +338,10 @@ button, input[type=submit] {
 .autocomplete-tag {
     display: inline;
     float: left;
+    padding-right: 2px;
 }
 .autocomplete-count {
     display: inline;
     float: right;
+    padding-left: 2px;
 }

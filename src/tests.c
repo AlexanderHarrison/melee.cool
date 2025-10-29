@@ -746,14 +746,14 @@ void test(void) {
     msg_send(c);
     expect_reply_err(false);
     expect_reply_contains("class=clip");
-    
+
     start_test("find clips quote tag");
     msg_post("/find-clips");
     msg_var("idx", "10");
     msg_var_slice("tags", quote_tag);
     msg_send(c);
     expect_reply_err(true);
-    
+
     // FINISHED! ------------------------------------------
     
     printf("## Tests all good! ##\n");

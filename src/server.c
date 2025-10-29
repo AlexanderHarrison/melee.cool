@@ -51,6 +51,49 @@ void mg_print_str(const char *preface, struct mg_str str) {
     printf("%s%.*s\n", preface, (int) str.len, str.buf);
 }
 
+static const char hex_decode_lut[256] = {
+    ['0'] = 0, ['1'] = 1, ['2'] = 2, ['3'] = 3, ['4'] = 4,
+    ['5'] = 5, ['6'] = 6, ['7'] = 7, ['8'] = 8, ['9'] = 9,
+    ['a'] = 10, ['b'] = 11, ['c'] = 12, ['d'] = 13, ['e'] = 14, ['f'] = 15,
+    ['A'] = 10, ['B'] = 11, ['C'] = 12, ['D'] = 13, ['E'] = 14, ['F'] = 15,
+};
+
+static const char hex_encode_lut[16] = {
+    '0', '1', '2', '3',
+    '4', '5', '6', '7',
+    '8', '9', 'A', 'B',
+    'C', 'D', 'E', 'F',
+};
+
+void format_uint_hex(char buf[8], U32 n) {
+    buf[0] = hex_encode_lut[(n >> 28) & 0xF];
+    buf[1] = hex_encode_lut[(n >> 24) & 0xF];
+    buf[2] = hex_encode_lut[(n >> 20) & 0xF];
+    buf[3] = hex_encode_lut[(n >> 16) & 0xF];
+    buf[4] = hex_encode_lut[(n >> 12) & 0xF];
+    buf[5] = hex_encode_lut[(n >>  8) & 0xF];
+    buf[6] = hex_encode_lut[(n >>  4) & 0xF];
+    buf[7] = hex_encode_lut[(n >>  0) & 0xF];
+}
+
+Str uint_str(char buf[8]) {
+    Str s = { buf, 8 };
+    while (s.len > 1 && s.buf[0] == '0') {
+        s.len--;
+        s.buf++;
+    }
+    return s;
+}
+
+U32 parse_uint_hex(Str s) {
+    U32 n = 0;
+    for (U32 l = 0; l < s.len; ++l) {
+        char c = s.buf[l];
+        n = (n << 4) | (U32)hex_decode_lut[c];
+    }
+    return n;
+}
+
 #define REPLY_SIZE (1024*1024)
 static Str reply;
 static Str reply_headers;
@@ -68,6 +111,13 @@ void reply_headers_push_slice(const char *buf, USize len) {
     if (reply_headers.len + len <= REPLY_SIZE)
         memcpy(reply_headers.buf + reply_headers.len, buf, len);
     reply_headers.len += len;
+}
+
+void reply_headers_push_uint_hex(U32 n) {
+    char idx_buf[8];
+    format_uint_hex(idx_buf, n);
+    Str idx_str = uint_str(idx_buf);
+    reply_headers_push_slice(idx_str.buf, idx_str.len);
 }
 
 #define reply_push_const(s) do {\
@@ -104,6 +154,13 @@ void reply_push_uint(U32 n) {
             reply.buf[reply.len++] = digits[len-1];
     }
     reply.len += len;
+}
+
+void reply_push_uint_hex(U32 n) {
+    char idx_buf[8];
+    format_uint_hex(idx_buf, n);
+    Str idx_str = uint_str(idx_buf);
+    reply_push_slice(idx_str.buf, idx_str.len);
 }
 
 char html_char_escape_lut[] = {
@@ -197,7 +254,16 @@ enum embed_mode {
         timestamp (only present if embed mode is nonzero)
 */
                 
-void reply_clip(char *buf) {
+char metabuf[META_MAX];
+
+void reply_clip(MetaIdx meta_idx, U32 report_flags) {
+    char *buf = metabuf;
+
+    if (!read_metadata(buf, meta_idx)) {
+        // error, just skip
+        return;
+    }
+
     reply_push_const("<div class=clip>");
     
     char version = (*buf) >> 4;
@@ -218,6 +284,57 @@ void reply_clip(char *buf) {
     reply_push_const("\">");
     reply_html((Str) { title, title_len });
     reply_push_const("</a>");
+    
+    reply_push_const("<div class=\"clip-menu-button");
+    if (report_flags) {
+        reply_push_const(" clip-menu-button-reported");
+        reply_push_const("\"><div class=emoji>🚧</div>");
+    } else {
+        reply_push_const(
+            "\"><svg width=24 height=24 xmlns='http://www.w3.org/2000/svg'>"
+                "<circle cx=12 cy=7 r=1.5 />"
+                "<circle cx=12 cy=12 r=1.5 />"
+                "<circle cx=12 cy=17 r=1.5 />"
+            "</svg>"
+        );
+    }
+
+    reply_push_const("<div class=clip-menu>");
+
+    char meta_idx_buf[8];
+    format_uint_hex(meta_idx_buf, meta_idx);
+    
+    if (report_flags & (1u << REPORT_SPAM)) {
+        reply_push_const("<div class=clip-menu-item onclick=\"unreport(this, 'spam', '");
+        reply_push_slice(meta_idx_buf, 8);
+        reply_push_const("')\">Un-Report (Spam)</div>");
+    } else {
+        reply_push_const("<div class=clip-menu-item onclick=\"report(this, 'spam', '");
+        reply_push_slice(meta_idx_buf, 8);
+        reply_push_const("')\">Report (Spam)</div>");
+    }
+    
+    if (report_flags & (1u << REPORT_DUPLICATE)) {
+        reply_push_const("<div class=clip-menu-item onclick=\"unreport(this, 'duplicate', '");
+        reply_push_slice(meta_idx_buf, 8);
+        reply_push_const("')\">Un-Report (Duplicate)</div>");
+    } else {
+        reply_push_const("<div class=clip-menu-item onclick=\"report(this, 'duplicate', '");
+        reply_push_slice(meta_idx_buf, 8);
+        reply_push_const("')\">Report (Duplicate)</div>");
+    }
+    
+    if (report_flags & (1u << REPORT_ERROR)) {
+        reply_push_const("<div class=clip-menu-item onclick=\"unreport(this, 'error', '");
+        reply_push_slice(meta_idx_buf, 8);
+        reply_push_const("')\">Un-Report (Typo/Error)</div>");
+    } else {
+        reply_push_const("<div class=clip-menu-item onclick=\"report(this, 'error', '");
+        reply_push_slice(meta_idx_buf, 8);
+        reply_push_const("')\">Report (Typo/Error)</div>");
+    }
+    
+    reply_push_const("</div></div>");
     
     char *tags = link + link_len + 1;
     USize tags_len = strlen(tags);
@@ -289,43 +406,45 @@ void reply_clip(char *buf) {
 }
 
 #define CLIP_MAX 10
-char metabuf[CLIP_MAX * META_MAX];
 
 void reply_clips(EntrySearch *search, bool reverse_search) {
-    char *entries[CLIP_MAX];
+    MetaIdx entries[CLIP_MAX];
     USize entry_count = 0;
     
     if (reverse_search) {
         for (; entry_count != CLIP_MAX; ++entry_count) {
-            char *entry = &metabuf[entry_count * META_MAX];
-            if (!search_prev(entry, search))
+            MetaIdx meta_idx = search_prev(search);
+            if (meta_idx == META_NULL)
                 break;
-            entries[entry_count] = entry;
+            entries[entry_count] = meta_idx;
         }
         // reverse entry order
         for (USize i = 0; i < entry_count/2; ++i) {
-            char *a = entries[i];
-            char *b = entries[entry_count - i - 1];
+            MetaIdx a = entries[i];
+            MetaIdx b = entries[entry_count - i - 1];
             entries[i] = b;
             entries[entry_count - i - 1] = a;
         }
     } else {
         for (; entry_count != CLIP_MAX; ++entry_count) {
-            char *entry = &metabuf[entry_count * META_MAX];
-            if (!search_next(entry, search))
+            MetaIdx meta_idx = search_next(search);
+            if (meta_idx == META_NULL)
                 break;
-            entries[entry_count] = entry;
+            entries[entry_count] = meta_idx;
         }
     }
-
+    
     reply_push_const("<div id=clips hx-swap-oob=true>");
     
     if (entry_count == 0)
         reply_push_const("No results");
     
+    U32 reasons[CLIP_MAX];
+    check_reported(reasons, entries, entry_count);
+    
     for (U32 entry_i = 0; entry_i != entry_count; ++entry_i) {
-        char *entry = entries[entry_i];
-        reply_clip(entry);
+        MetaIdx entry = entries[entry_i];
+        reply_clip(entry, reasons[entry_i]);
     }
     reply_push_const("</div>");
 }
@@ -352,39 +471,6 @@ void reply_send(struct mg_connection *c) {
 
     reply.len = 0;
     reply_headers.len = sizeof(default_reply_headers)-1;
-}
-
-static const char hex_decode_lut[256] = {
-    ['0'] = 0, ['1'] = 1, ['2'] = 2, ['3'] = 3, ['4'] = 4,
-    ['5'] = 5, ['6'] = 6, ['7'] = 7, ['8'] = 8, ['9'] = 9,
-    ['a'] = 10, ['b'] = 11, ['c'] = 12, ['d'] = 13, ['e'] = 14, ['f'] = 15,
-    ['A'] = 10, ['B'] = 11, ['C'] = 12, ['D'] = 13, ['E'] = 14, ['F'] = 15,
-};
-
-void format_uint_hex(char buf[8], U32 n) {
-    char *b = buf;
-
-    USize i = 28;
-    while (1) {
-        U32 digit = (n >> i) & 0xF;
-        U32 ch_start = digit < 10 ? '0' : ('A' - 10);
-        char c = (char)(digit + ch_start);
-
-        *b = c;
-        b++;
-        
-        if (i == 0) break;
-        i -= 4;
-    }
-}
-
-U32 parse_uint_hex(Str s) {
-    U32 n = 0;
-    for (U32 l = 0; l < s.len; ++l) {
-        char c = s.buf[l];
-        n = (n << 4) | (U32)hex_decode_lut[c];
-    }
-    return n;
 }
 
 bool invalid_tag(Str tag) {
@@ -784,10 +870,9 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
 
                     search_tag(&search, tag);
                 }
-
+                
                 reply_clips(&search, reverse_search);
                 mg_free(tags_str_decoded.buf);
-                
                 reply_headers_push_const("Hx-Push-Url: /clips/?");
                 
                 {
@@ -801,13 +886,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
 
                     for (USize i = 0; i < idx_given_count; ++i) {
                         if (i) reply_headers_push_const("-");
-
-                        char idx_str[8];
-                        format_uint_hex(idx_str, idx_given[i]);
-                        char *idx_buf = idx_str;
-                        USize idx_len = countof(idx_str);
-                        while (idx_len && *idx_buf == '0') { idx_buf++; idx_len--; }
-                        reply_headers_push_slice(idx_buf, idx_len);
+                        reply_headers_push_uint_hex(idx_given[i]);
                     }
                 }
 
@@ -823,13 +902,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
 
                     for (USize i = 0; i < idx_new_count; ++i) {
                         if (i) reply_headers_push_const("-");
-
-                        char idx_str[8];
-                        format_uint_hex(idx_str, idx_new[i]);
-                        char *idx_buf = idx_str;
-                        USize idx_len = countof(idx_str);
-                        while (idx_len && *idx_buf == '0') { idx_buf++; idx_len--; }
-                        reply_headers_push_slice(idx_buf, idx_len);
+                        reply_headers_push_uint_hex(idx_new[i]);
                     }
                 }
 
@@ -939,6 +1012,37 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 
                 reply_send(c);
             }
+            else if (mg_match(hm->uri, mg_str("/report-clip"), NULL)) {
+                Str meta_idx_str = mg_http_var(hm->body, mg_str("meta-idx"));
+                MetaIdx meta_idx = parse_uint_hex(meta_idx_str);
+                Str unreport = mg_http_var(hm->body, mg_str("unreport"));
+                
+                Str reason_str = mg_http_var(hm->body, mg_str("reason"));
+                int reason;
+                if (str_eq(reason_str, ConstStr("spam"))) {
+                    reason = REPORT_SPAM;
+                } else if (str_eq(reason_str, ConstStr("duplicate"))) {
+                    reason = REPORT_DUPLICATE;
+                } else if (str_eq(reason_str, ConstStr("error"))) {
+                    reason = REPORT_ERROR;
+                } else {
+                    reason = REPORT_NONE;
+                }
+
+                if (reason != REPORT_NONE) {
+                    if (unreport.len) {
+                        unreport_clip(meta_idx, reason);
+                        printf("unreported %x (%.*s)\n", meta_idx, (int)reason_str.len, reason_str.buf);
+                    } else {
+                        report_clip(meta_idx, reason);
+                        printf("reported %x (%.*s)\n", meta_idx, (int)reason_str.len, reason_str.buf);
+                    }
+                }
+
+                reply_clear_error();
+                reply_send(c);
+            }
+            
             #ifdef TEST
                 else if (mg_match(hm->uri, mg_str("/populate"), NULL)) {
                     create_entries(1 << 12, 32);
@@ -1016,7 +1120,7 @@ int main(void) {
     timer_elapsed("init clip tables");
     
     timer_start();
-    // create_entries(1 << 16, 8);
+    // create_entries(1 << 10, 8);
     timer_elapsed("create entries");
     
     reply.buf = calloc(REPLY_SIZE, 1);

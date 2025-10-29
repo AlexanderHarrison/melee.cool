@@ -11,7 +11,7 @@
 
 <script src=/header.js></script>
 
-<h1 class=title>🚧 The Clip Dump 🚧</h1>
+<h1 class=title><div class=emoji>🚧</div> The Clip Dump <div class=emoji>🚧</div></h1>
 
 <a id=plug href="https://patreon.com/rwing_aitch">
     Please consider helping with server costs on my Patreon.
@@ -70,6 +70,7 @@
                 <li><b>Add all relevant tags.</b> If a tag has not yet been created, only add it if could be generally applicable to other clips.</li>
                 <li><b>Submit links with a timestamp when possible.</b></li>
                 <li><b>Prefer linking to youtube videos and twitch clips over twitch videos.</b></li>
+                <li><b>Report clips that should be deleted.</b> Deletion is curated and will occur weekly.</li>
             </ul>
         </details>
 
@@ -154,6 +155,20 @@ function find_clips(idx_param, reverse) {
     if (idx != null) { values.idx = idx; }
     if (reverse) { values.rev = true; }
     htmx.ajax('POST', '/find-clips', { swap: "none", values: values });
+}
+
+function report(obj, reason, meta_idx) {
+    const values = { 'meta-idx': meta_idx, reason: reason };
+    htmx.ajax('POST', '/report-clip', { swap: "none", values: values })
+        .then(() => find_clips("idx-a", false));
+    // obj.parentElement.style.display = "none";
+}
+
+function unreport(obj, reason, meta_idx) {
+    const values = { 'meta-idx': meta_idx, unreport: 1, reason: reason };
+    htmx.ajax('POST', '/report-clip', { swap: "none", values: values })
+        .then(() => find_clips("idx-a", false));
+    // obj.parentElement.style.display = "none";
 }
 
 find_clips("idx-a", false);
