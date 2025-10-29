@@ -289,7 +289,7 @@ void reply_clip(MetaIdx meta_idx, U32 report_flags) {
     reply_push_const("<div class=\"clip-menu-button");
     if (report_flags) {
         reply_push_const(" clip-menu-button-reported");
-        reply_push_const("\"><div class=emoji>🚧</div>");
+        reply_push_const("\">🚧");
     } else {
         reply_push_const(
             "\"><svg width=24 height=24 xmlns='http://www.w3.org/2000/svg'>"
