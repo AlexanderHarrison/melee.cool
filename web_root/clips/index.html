@@ -83,6 +83,11 @@ button, input[type=submit] {
     padding: 5px;
 }
 
+#embeds-toggle-container {
+    display: inline-block;
+    padding-left: 10px;
+}
+
 .clip {
     padding-top: 15px;
     line-height: 1.2;
@@ -234,7 +239,9 @@ button, input[type=submit] {
 
     <div id="err"></div>
     
-    <form id="post-form" hx-post="/post-clip" hx-swap="none">
+    <form id="post-form" hx-post="/post-clip" hx-swap="none"
+        hx-on::after-request="find_recent_clips();"
+    >
         <div class=post-row>
             <label for="post-title">Title:</label>
             <input
@@ -267,7 +274,7 @@ button, input[type=submit] {
                 placeholder="ssbm mang0 zain summit_11 game_10"
                 hx-post="/tag-autocomplete"
                 hx-vals="js:{ 'tag-prefix': get_current_tag(event.target) }"
-                hx-trigger="input throttle:100ms"
+                hx-trigger="consume input throttle:100ms"
                 hx-target="#post-autocomplete"
                 hx-swap="innerHTML"
             />
@@ -309,6 +316,10 @@ button, input[type=submit] {
             />
             <div id="search-autocomplete"></div>
             <input type="submit" value="Search" />
+            <div id="embeds-toggle-container" >
+                <input id="embeds-toggle" type="checkbox" name="embeds"></input>
+                <label id="embeds-toggle-label" for="embeds">Embeds</label>
+            </div>
         </form>
     </div>
     
@@ -322,6 +333,15 @@ button, input[type=submit] {
 </div>
 
 <script>
+
+// remember embed state
+const embed_ele = document.getElementById("embeds-toggle");
+embed_ele.checked = localStorage.getItem("embeds-toggle") != "false";
+embed_ele.addEventListener("change", function (e) {
+    localStorage.setItem("embeds-toggle", this.checked);
+    find_clips('idx-a', false);
+});
+
 function embed_twitter_post(embed_obj, post_id) {
     const url = 'https://publish.twitter.com/oembed?dnt=true&theme=dark&width=400&hide_thread=true&url=https%3A%2F%2Ftwitter.com%2FInterior%2Fstatus%2F' + post_id;
     $.ajax({
@@ -366,13 +386,20 @@ function get_current_tag(ele) {
     return str.substring(start, end + 1).trim();
 }
 
+function find_recent_clips() {
+    const embeds = document.getElementById("embeds-toggle").checked;
+    var values = { embeds: embeds };
+    htmx.ajax('POST', '/find-clips', { swap: "none", values: values });
+}
+
 function find_clips(idx_param, reverse) {
     const params = new URLSearchParams(window.location.search);
     const tags = params.get("tags");
     const idx = params.get(idx_param);
     document.getElementById("search-tags").value = tags;
+    const embeds = document.getElementById("embeds-toggle").checked;
     
-    var values = { };
+    var values = { embeds: embeds };
     if (tags != null) { values.tags = tags; }
     if (idx != null) { values.idx = idx; }
     if (reverse) { values.rev = true; }

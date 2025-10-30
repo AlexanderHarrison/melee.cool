@@ -257,7 +257,7 @@ enum embed_mode {
                 
 char metabuf[META_MAX];
 
-void reply_clip(MetaIdx meta_idx, U32 report_flags) {
+void reply_clip(MetaIdx meta_idx, U32 report_flags, bool show_embed) {
     char *buf = metabuf;
 
     if (!read_metadata(buf, meta_idx)) {
@@ -340,6 +340,8 @@ void reply_clip(MetaIdx meta_idx, U32 report_flags) {
     char *tags = link + link_len + 1;
     USize tags_len = strlen(tags);
     
+    if (!show_embed) embed_mode = EMBED_NONE;
+    
     const char *embed = NULL;
     USize embed_len = 0;
     const char *timestamp = NULL;
@@ -414,7 +416,7 @@ void reply_clip(MetaIdx meta_idx, U32 report_flags) {
 
 #define CLIP_MAX 10
 
-void reply_clips(EntrySearch *search, bool reverse_search) {
+void reply_clips(EntrySearch *search, bool reverse_search, bool embeds) {
     MetaIdx entries[CLIP_MAX];
     USize entry_count = 0;
     
@@ -451,7 +453,7 @@ void reply_clips(EntrySearch *search, bool reverse_search) {
     
     for (U32 entry_i = 0; entry_i != entry_count; ++entry_i) {
         MetaIdx entry = entries[entry_i];
-        reply_clip(entry, reasons[entry_i]);
+        reply_clip(entry, reasons[entry_i], embeds);
     }
     reply_push_const("</div>");
 }
@@ -851,7 +853,9 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 Str tags_str = mg_http_var(hm->body, mg_str("tags"));
                 Str search_idx_str = mg_http_var(hm->body, mg_str("idx"));
                 Str rev_str = mg_http_var(hm->body, mg_str("rev"));
+                Str embeds_str = mg_http_var(hm->body, mg_str("embeds"));
                 bool reverse_search = rev_str.len != 0;
+                bool embeds = str_eq(embeds_str, ConstStr("true"));
 
                 EntrySearch search = { 0 };
                 U32 idx[TAG_MAX];
@@ -887,7 +891,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                     search_tag(&search, tag);
                 }
                 
-                reply_clips(&search, reverse_search);
+                reply_clips(&search, reverse_search, embeds);
                 mg_free(tags_str_decoded.buf);
                 reply_headers_push_const("Hx-Push-Url: /clips/?");
                 
@@ -936,7 +940,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                 Str title = mg_http_var(hm->body, mg_str("title"));
                 Str link = mg_http_var(hm->body, mg_str("link"));
                 Str tags_str = mg_http_var(hm->body, mg_str("tags"));
-                
+    
                 if (title.len == 0) {
                     reply_error("Post must have a title.");
                     reply_send(c);
@@ -1003,9 +1007,7 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
                     reply_send(c);
                     return;
                 }
-                
-                EntrySearch search = { 0 };
-                reply_clips(&search, false);
+
                 reply_clear_error();
                 reply_send(c);
             }
