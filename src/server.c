@@ -1076,8 +1076,8 @@ void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
     }
     else if (ev == MG_EV_ACCEPT && c->is_tls) {
         struct mg_tls_opts opts = {
-            .cert = mg_file_read(&mg_fs_posix, "certs/domain.cert.pem"),
-            .key = mg_file_read(&mg_fs_posix, "certs/private.key.pem"),
+            .cert = mg_file_read(&mg_fs_posix, "/etc/letsencrypt/live/melee.cool/fullchain.pem"),
+            .key = mg_file_read(&mg_fs_posix, "/etc/letsencrypt/live/melee.cool/privkey.pem"),
         };
         mg_tls_init(c, &opts);
     }
