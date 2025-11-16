@@ -276,8 +276,9 @@ button, input[type=submit] {
                 placeholder="ssbm mang0 zain summit_11 game_10"
                 hx-post="/tag-autocomplete"
                 hx-vals="js:{ 'tag-prefix': get_current_tag(event.target) }"
-                hx-trigger="consume input throttle:100ms"
+                hx-trigger="input throttle:100ms"
                 hx-target="#post-autocomplete"
+                hx-on::after-request="event.stopPropagation()"
                 hx-swap="innerHTML"
             />
             <div id="post-autocomplete"></div><br>
