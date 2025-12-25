@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/main.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Stadium Clips</title>
+</head>
+
+<body>
+
+<script src=/header.js></script>
+
+<h1 class=title>New Fire Transformation Clips!</h1>
+
+<h2 id="the-wavedash">Wavedash Clip</h2>
+<p>
+We can clip into stadium using a well timed wavedash here.
+This is well known and commonly done on accident.
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/wavedash-clip.mp4 loop muted type=video/mp4></video>
+Clip: Move into the corner. Jump and f1 airdodge down right.
+
+<p>
+If our character don't have a tether, this clip is bad.
+Using an airdodge to clip causes us to enter special fall and fall to our death.
+We die with no way to recover or have fun inside the stage.
+We want to be actionable after clipping.
+
+<h2 id="airdodge-item-throw">Airdodge Item Throw?</h2>
+
+<p>
+We can cancel the first 3 frames of airdodge with an item throw.
+This is called an airdodge item throw (or an aerial glide toss, but I think that's a bad name).
+Can we use that here to become actionable after the wavedash clip?
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/wavedash-clip-glide-toss.mp4 loop muted type=video/mp4></video>
+Clip: Move into the corner. Jump and f1 airdodge down right. Item throw in the first 3 frames of airdodge.
+
+<p>
+No. An airdodge item throw retains our velocity from before the airdodge.
+The jump velocity makes us pop up from beneath the stage.
+
+<p>
+This could work if we could stop our vertical momentum before the airdodge.
+And Peach has just the tool! Her double jump!
+
+<h2 id="airdodge-item-throw-clip">DJ Airdodge Item Throw Clip</h2>
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/dj-glide-toss-clip.mp4 loop muted type=video/mp4></video>
+Clip: Move into the corner. Jump and f1 double jump, then f1 airdodge down right. Item throw in the first 3 frames of airdodge.
+
+<p>
+This clip works but it's very hard.
+It requires a frame perfect double jump, a frame perfect airdodge,
+and a frame perfect left stick to airdodge down and right without double jumping to the right.
+And then hit the 3 frame airdodge item throw.
+
+<p>
+If we play around with this clip a bit, we find that we don't need the airdodge at all!
+This might be an easier clip.
+
+<h2 id="item-throw-clip">DJ Item Throw Clip</h2>
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/dj-item-throw-clip.mp4 loop muted type=video/mp4></video>
+Clip: Move into the corner. Jump and f1 double jump, then next frame hold right and item throw.
+
+<p>
+Unfortunately, this clip is still really hard!
+We need a frame perfect left stick to move right after the double jump.
+And we also need a frame perfect cstick throw input after the double jump.
+We will clip back up if we are off.
+The airdodge item throw clip might have had more inputs,
+but fast double frame perfect analog inputs are hard and inconsistent.
+
+<h2 id="aerial-clip">DJ Aerial Clip</h2>
+
+<p>
+There's nothing special about an item throw here.
+We are using it to cancel our upwards double jump velocity,
+but we can also cancel double jump velocity using aerials.
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/dj-aerial-clip.mp4 loop muted type=video/mp4></video>
+Clip: Move into the corner. Jump and f1 double jump, then next frame hold right and input an aerial.
+
+<p>
+This setup isn't any easier, but it doesn't need a turnip.
+For a long time I thought this was the easiest clip.
+But we can do way better!
+
+<p>
+Aside: This method of clipping was <a href="https://xcancel.com/PracticalTAS/status/1924522992127602821">popularized (discovered?) by PracticalTas.</a>
+He used an inconsistent tas-only setup.
+I quickly improved his setup into this one and hit it legit.
+That's how I started researching clip setups.
+
+<h2 id="new-setup">The New Setup</h2>
+
+<p>
+If you practice the old hellish setup enough, you will eventually (by accident) do this:
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/dj-wacky-clip.mp4 loop muted type=video/mp4></video>
+
+<p>Which is really really strange, because usually you double jump land like this:
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/djland-normal.mp4 loop muted type=video/mp4></video>
+
+<p>
+Somehow, we are clipping into the stage by just double jumping?
+Since we spend more time below the floor with this wacky double jump airdodge, it could lead to easier setups.
+How can we replicate this?
+
+<p>
+If we look into it, we find that the double jump clip occurs when Peach is very slightly further to the left than usual.
+Here, the double jump clip works at -49.582, but not at -49.831.
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/djland-djclip-difference.mp4 loop muted type=video/mp4></video>
+
+<p>
+Getting this far left from walking is kinda random.
+We need to walk fast for a single frame without entering dash.
+The faster we walk, the further to the left we end up.
+If we walk fast enough, the double jump clip works.
+
+<p>
+We can play around with every method to moving into the corner and see if they consistently move us far enough left.
+The options are walking, dashing, running, wavedashing, dj landing, dash attacking, glide tossing, dash jc throwing,
+dash jc grabbing, dash jc usmash, landing turnip throws, landing aerials, and dash turnip throw.
+
+<p>
+Only two work. The walk setup we used before, and dash turnip throw!
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/dash-turnip-setup.mp4 loop muted type=video/mp4></video>
+
+<p>
+Hooray! We found a consistent setup to get this wacky double jump clip.
+We just need to turnip dash throw into the corner!
+Because this wacky double jump causes us to be inside the stage for a good while, we should be able to clip more consistently.
+How much more consistent are our old clip methods with this new strategy?
+
+<h2 id="new-setup-aerial-clip">Aerial Clip with New Setup</h2>
+
+<p>
+Let's try the double jump aerial clip first:
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/new-setup-uair.mp4 loop muted type=video/mp4></video>
+Clip: Turnip dash throw into the corner. Jump and f1 double jump, then hold right and uair at various timings. Here, we hold right f2 and uair f6.
+
+<p>
+Yes! The double jump aerial clip is more lenient with this new setup.
+However, it's still really inconsistent. 
+The timing of when this clip works is very complicated.
+Different aerials work with different timings and it depends on when and how you drift.
+And polling on the left stick can cause you to randomly fail or succeed.
+
+<p>
+Below are tables showing when each aerial works with this setup.
+The column is the frame you input the aerial.
+The row is the frame that you press right.
+This assumes a perfect 1f right input with no intermediate polling.
+Intermediate polling will change the table and it is currently impractical to test that.
+
+<p>
+<details>
+<summary>Uair</summary>
+<table>
+<tr>
+<td>RIGHT \ AERIAL</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td>7</td>
+</tr>
+<tr>
+<td>1</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+</tr>
+<tr>
+<td>5</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+</tr>
+</table>
+</details>
+
+<details>
+<summary>Dair</summary>
+<table>
+<tr>
+<td>RIGHT \ AERIAL</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+</tr>
+<tr>
+<td>1</td>
+<td></td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+</tr>
+<tr>
+<td>2</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+</tr>
+<tr>
+<td>3</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+</tr>
+</table>
+</details>
+
+<details>
+<summary>Bair</summary>
+<table>
+<tr>
+<td>RIGHT \ AERIAL</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+</tr>
+<tr>
+<td>1</td>
+<td>O</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+</tr>
+<tr>
+<td>4</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+</details>
+
+<details>
+<summary>Fair</summary>
+<table>
+<tr>
+<td>RIGHT \ AERIAL</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td>7</td>
+</tr>
+<tr>
+<td>1</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+</tr>
+<tr>
+<td>4</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+</tr>
+<tr>
+<td>5</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td></td>
+</tr>
+</table>
+</details>
+
+<details>
+<summary>Nair</summary>
+<table>
+<tr>
+<td>RIGHT \ AERIAL</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+</tr>
+<tr>
+<td>2</td>
+<td>O</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+</details>
+
+<p>
+I think the best setup is to use dair and aim for an early right press and a late dair press.
+This gives us the most leeway and should be the most consistent.
+And the later the cstick input, the easier it is on the right hand.
+
+<h2 id="new-setup-item-throw-clip">Item Throw Clip with New Setup</h2>
+
+<p>
+Like with the old setup, we can also use a turnip throw instead of an aerial to cancel the dj momentum.
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/new-setup-fthrow.mp4 loop muted type=video/mp4></video>
+
+<p>
+I've only checked the fthrow table for now.
+The other throws look very slightly less lenient than fthrow?
+I will check in the future.
+
+<p>
+<details>
+<summary>Turnip FThrow</summary>
+<table>
+<tr>
+<td>RIGHT \ AERIAL</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+</tr>
+<tr>
+<td>1</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+</tr>
+<tr>
+<td>2</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+</tr>
+<tr>
+<td>3</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+</tr>
+<tr>
+<td>4</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+</tr>
+</table>
+</details>
+
+<h2 id="new-setup-airdodge-item-throw-clip">Airdodge Item Throw Clip with New Setup</h2>
+
+<p>
+Likewise, we can also try the airdodge item throw.
+Because we have a large window to airdodge with the new setup, it's MUCH more lenient then the old setup.
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/new-setup-airdodge-dthrow.mp4 loop muted type=video/mp4></video>
+Clip: Turnip dash throw into the corner. Jump and f1 double jump. Within 9 frames, airdodge down right and item throw in the next 3 frames.
+
+<p>
+Note that dthrow is slightly more lenient than other throws.
+This setup is very consistent. The only frame perfect input is the double jump.
+However, it is an awkward input because you need to release jump before the airdodge to avoid floating,
+and there are a lot of buttons to press and sticks to move.
+But when you get the timing down it should be pretty consistent.
+
+<p>
+The best part of this clip method?
+Sometimes when you fail, you still clip!
+If you mistime the airdodge press, you still throw the turnip and can get the dj throw clip.
+And if you don't release jump before holding down right, you get a new type of clip - the float clip!
+
+<h2 id="new-setup-float-clip">Float Clip</h2>
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/new-setup-float-clip.mp4 loop muted type=video/mp4></video>
+Clip: Turnip dash throw into the corner. Jump and f1 double jump. Hold down right to float, then quickly release jump to drop float.
+
+<details>
+<summary>Float clip frame data</summary>
+<table>
+<tr>
+<td>FLOAT \ DROP FLOAT</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td>7</td>
+<td>8</td>
+<td>9</td>
+<td>10</td>
+<td>11</td>
+<td>12</td>
+<td>13</td>
+</tr>
+<tr>
+<td>1</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td></td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td></td>
+<td>O</td>
+<td>O</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+<td>O</td>
+</tr>
+<tr>
+<td>8</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>O</td>
+<td>O</td>
+</tr>
+</table>
+</details>
+
+<p>
+The float clip is by far the easiest and most consistent method to clip.
+However, it doesn't leave us with many options.
+We need to use float and double jump to clip, so we can't do much while inside the stage.
+It's impractical to grab the right ledge using this clip.
+You can Up B to the right, waveland to the right, or aerial to the left.
+You can also use Side B to get some momentum to either side.
+
+<h2 id="tldr">TLDR</h2>
+
+<p>
+TLDR:
+You can clip by walking into the corner, instant double jumping, then either item throwing, using an aerial, or airdodge item throwing.
+These clips are really really hard and inconsistent.
+By turnip dash throwing into the corner, you move slightly further left than usual.
+From this position, our instant double jump will clip much more than usual.
+Then, we can use the same setups from before and they will be way more lenient.
+We can now also float clip, which is extremely lenient but gives us few options for fun after clipping.
+
+<h2 id="how-clips-work">How Does Clipping Work?</h2>
+
+<p>
+So how do these clips work?
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/left-clip-collision.mp4 loop muted type=video/mp4></video>
+
+<p>
+Collision in a stage is made up of connected lines.
+White lines are floors, blue lines are left-facing walls, green lines are right-facing walls, and red lines are ceilings.
+This part of stadium lets us stand on a wall.
+We can sometimes go downwards into a wall because it expects us to move into it from the side.
+From here, we can move beneath the floor and clip into the stage to the right.
+To be honest, I'm not sure about the specifics, I just try stuff until it works.
+
+<h2 id="right-side-clip">Right Side Clip?</h2>
+
+<p>
+The above clips work because the wall is at an angle, not straight up and down.
+This other part of the fire transformation has this property, can we clip here too?
+All we should need to do is move downwards into the wall, then move right while beneath the stage.
+
+<p><img loading="lazy" src=right-clip-collision.png />
+
+<p>
+I won't bore you with all the setups I tried.
+I tried a billion different methods to clip, and,
+turns out, we can clip with a simple airdodge!
+I don't know why this hasn't been found before.
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/right-clip-airdodge.mp4 loop muted type=video/mp4></video>
+Clip: Move up to wall. Shorthop and drift into the wall. Airdodge down right the frame before landing.
+
+<h2 id="right-side-airdodge-item-throw">Right Side Clip Airdodge Item Throw</h2>
+
+<p>
+And when we airdodge, we can airdodge item throw!
+I love airdodge item throw.
+Because we airdodge when we are falling instead of rising, our retained velocity moves us down into the stage instead of back up in-bounds. 
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/right-clip-airdodge-item-throw.mp4 loop muted type=video/mp4></video>
+Clip: Move up to wall. Shorthop and drift into the wall. Airdodge down right the frame before landing, then item throw in the next 3 frames.
+
+<p>
+I really have no clue why this hasn't been discovered before.
+Maybe this is known, but I haven't seen anything on it.
+
+<h2 id="yl-right-side-airdodge-item-throw">YL and Link's Right Side Clip</h2>
+
+<p>
+Link and Young Link can do this clip too, using bombs!
+They need to shorthop from the little bottom dip instead of next to the wall though,
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/right-clip-airdodge-item-throw-YL.mp4 loop muted type=video/mp4></video>
+Clip: Move into bottom dip. Shorthop and drift into the wall. Airdodge down right the frame before landing, then item throw in the next 3 frames.
+
+<p>
+I'm sure there are more setups to clip here, but this is the only one I could find.
+If I understood how these clips worked better, I'm sure I could find more.
+
+<h2 id="parasol-dash">Parasol Dash from Hidden Ledge</h2>
+
+<p>
+Bonus:
+Peach has a parasol dash from the hidden inner ledge.
+You can grab this ledge using parasol after clipping.
+The spacing is tricky because you can't see anything, but you should be able to get it down.
+After grabbing this ledge from parasol, quickly release ledge, double jump, then airdodge straight up.
+It's slightly more lenient than a regular parasol dash.
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/right-clip-parasol-dash.mp4 loop muted type=video/mp4></video>
+
+<h2 id="tldr2">TLDR</h2>
+
+<p>
+And that's every method I know to clip into stadium by yourself after the transformation has settled!
+There are 7 methods in total:
+
+<ol>
+<li>left-side wavedash (easy, consistent, dead)</li>
+<li>left-side instant dj aerial/item throw (hard, inconsistent, fun)</li>
+<li>left-side instant dj airdodge item throw (hard, inconsistent, fun)</li>
+<li>left-side turnip dash throw instant dj aerial/item throw (hard, inconsistent, fun)</li>
+<li>left-side turnip dash throw instant dj airdodge item throw (hard, consistent, fun)</li>
+<li>left-side turnip dash throw instant dj float (easy, consistent, meh)</li>
+<li>right-side airdodge (easy, consistent, meh)</li>
+<li>right-side airdodge item throw (easy, consistent, fun)</li>
+</ol>
+
+<h2 id="todo">What Should You Learn?</h2>
+
+<p>
+I suggest you start by practicing the float clip first.
+Just turnip dash throw into that corner, then instant dj, then press down right, then quickly release jump.
+It's pretty easy when you get the timing down!
+
+<p>
+If you want float after clipping, learn the right-side airdodge item throw clip.
+This one is also pretty easy.
+
+<p>
+Enjoy!
+
+<p>
+- Aitch
+
+<script src=/lazy_load_video.js></script>
+</body>
+</html>
