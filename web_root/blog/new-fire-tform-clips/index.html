@@ -514,15 +514,15 @@ But when you get the timing down it should be pretty consistent.
 The best part of this clip method?
 Sometimes when you fail, you still clip!
 If you mistime the airdodge press, you still throw the turnip and can get the dj throw clip.
-And if you don't release jump before holding down right, you get a new type of clip - the float clip!
+And if you don't release jump before holding down right, you get a new type of clip - the dj float clip!
 
-<h2 id="new-setup-float-clip">Float Clip</h2>
+<h2 id="new-setup-float-clip">DJ Float Clip</h2>
 
 <p><video preload=metadata src=/blog/new-fire-tform-clips/new-setup-float-clip.mp4 loop muted type=video/mp4></video>
 Clip: Turnip dash throw into the corner. Jump and f1 double jump. Hold down right to float, then quickly release jump to drop float.
 
 <details>
-<summary>Float clip frame data</summary>
+<summary>DJ float clip frame data</summary>
 <table>
 <tr>
 <td>FLOAT \ DROP FLOAT</td>
@@ -663,7 +663,7 @@ Clip: Turnip dash throw into the corner. Jump and f1 double jump. Hold down righ
 </details>
 
 <p>
-The float clip is by far the easiest and most consistent method to clip.
+The dj float clip is by far the easiest and most consistent method to clip.
 However, it doesn't leave us with many options.
 We need to use float and double jump to clip, so we can't do much while inside the stage.
 It's impractical to grab the right ledge using this clip.
@@ -679,7 +679,7 @@ These clips are really really hard and inconsistent.
 By turnip dash throwing into the corner, you move slightly further left than usual.
 From this position, our instant double jump will clip much more than usual.
 Then, we can use the same setups from before and they will be way more lenient.
-We can now also float clip, which is extremely lenient but gives us few options for fun after clipping.
+We can now also dj float clip, which is extremely lenient but gives us few options for fun after clipping.
 
 <h2 id="how-clips-work">How Does Clipping Work?</h2>
 
@@ -738,8 +738,56 @@ They need to shorthop from the little bottom dip instead of next to the wall tho
 Clip: Move into bottom dip. Shorthop and drift into the wall. Airdodge down right the frame before landing, then item throw in the next 3 frames.
 
 <p>
+Nice and simple!
+Once you get the timing down this clip is pretty consistent.
+Make sure that you press down right as late as possible.
+It's around a 2 frame window.
+
+<p>
 I'm sure there are more setups to clip here, but this is the only one I could find.
 If I understood how these clips worked better, I'm sure I could find more.
+
+<h2 id="left-side-falling-clip">Left Side Falling Clip?</h2>
+
+<p>
+Remember that we can only airdodge item throw clip when we are falling.
+Otherwise we pop up from beneath when our pre-airdodge velocity is restored.
+On the left side, we solved this by airdodging after a double jump.
+On the right side, we solved this by airdodging at the bottom of a short hop.
+But we never checked if we could clip by airdodging after a short hop or another falling method on the left side!
+
+<p>
+Unfortunately, there's nowhere to shorthop from on the left side.
+If you shorthop and try to fall into the wall, you just land on the platform.
+But there's another method to fall - from float!
+
+<h2 id="left-side-float-airdodge-clip">Left Side Float Airdodge Clip</h2>
+
+<p>
+Again, I tried a billion setups here.
+But the setup that works is the simplest.
+Run up to the wall, ground float, drop float, and airdodge item throw down right on the last falling frame.
+
+<p><video preload=metadata src=/blog/new-fire-tform-clips/float-airdodge-item-throw-clip.mp4 loop muted type=video/mp4></video>
+Clip: Pull a turnip. Run into the wall and ground float. Drop float and hold down right.
+Airdodge on the last frame before landing, then item throw in the next three frames.
+
+<p>
+This clip has A LOT going for it.
+It's definitely the best left side clip if you don't need float.
+You can throw just by pressing A and you will throw backwards, turning around to face the hidden inner ledge.
+This avoids a tight analog cstick input.
+Sometimes, the airdodge has a 2 frame window. Not sure when exactly.
+After clipping you have a very large window to double jump to grab the hidden inner ledge.
+
+<p>
+There is one tricky part about this clip: having the right x velocity.
+After airdodge item throwing, your velocity before the airdodge is retained.
+If you are moving too fast to the left, you will clip in-bounds below the tree.
+If you are moving too fast to the right, the airdodge won't clip into the stage.
+I find the best method is to ground float with momentum to the left from dash jumping,
+then start holding down right just before releasing float.
+This seems to consistently give the correct x velocity.
 
 <h2 id="parasol-dash">Parasol Dash from Hidden Ledge</h2>
 
@@ -757,29 +805,45 @@ It's slightly more lenient than a regular parasol dash.
 
 <p>
 And that's every method I know to clip into stadium by yourself after the transformation has settled!
-There are 7 methods in total:
+There are 8 methods from 4 different setups in total:
 
 <ol>
-<li>left-side wavedash (easy, consistent, dead)</li>
-<li>left-side instant dj aerial/item throw (hard, inconsistent, fun)</li>
-<li>left-side instant dj airdodge item throw (hard, inconsistent, fun)</li>
-<li>left-side turnip dash throw instant dj aerial/item throw (hard, inconsistent, fun)</li>
-<li>left-side turnip dash throw instant dj airdodge item throw (hard, consistent, fun)</li>
-<li>left-side turnip dash throw instant dj float (easy, consistent, meh)</li>
-<li>right-side airdodge (easy, consistent, dead)</li>
-<li>right-side airdodge item throw (easy, consistent, fun)</li>
+    <li>Left side, no setup:
+        <ul>
+            <li>wavedash (easy, consistent, dead)</li>
+            <li>instant dj aerial/item throw (hard, inconsistent, fun)</li>
+            <li>instant dj airdodge item throw (hard, inconsistent, fun)</li>
+        </ul>
+    </li>
+    <li>Left side, turnip dash throw setup:
+        <ul>
+            <li>instant dj aerial/item throw (hard, inconsistent, fun)</li>
+            <li>instant dj airdodge item throw (hard, consistent, fun)</li>
+            <li>instant dj float (easy, consistent, meh)</li>
+        </ul>
+    </li>
+    <li>Left side, dash ground float setup:
+        <ul>
+            <li>drop float, airdodge item throw</li>
+        </ul>
+    </li>
+    <li>Right side, shorthop setup:
+        <ul>
+            <li>airdodge item throw (easy, consistent, fun)</li>
+        </ul>
+    </li>
 </ol>
 
 <h2 id="todo">What Should You Learn?</h2>
 
 <p>
-I suggest you start by practicing the float clip first.
-Just turnip dash throw into that corner, then instant dj, then press down right, then quickly release jump.
-It's pretty easy when you get the timing down!
+I suggest you start by practicing the ground float airdodge clip first.
+Just run and ground float into the corner, then fall and airdodge down right item throw.
+It's easy and consistent when you get the timing down!
 
 <p>
 If you want float after clipping, learn the right-side airdodge item throw clip.
-This one is also pretty easy.
+This one is also pretty easy and very simple, but can be inconsistent.
 
 <p>
 Enjoy!

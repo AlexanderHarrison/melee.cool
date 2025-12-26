@@ -3,35 +3,35 @@
 @import "/theme.css";
 
 body {
-    background: var(--bg);
-    font-family: sans-serif;
-    color: var(--fg);
-    max-width: 500pt;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 5px;
-    padding-right: 5px;
-    line-height: 1.5; 
+  background: var(--bg);
+  font-family: sans-serif;
+  color: var(--fg);
+  max-width: 500pt;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 5px;
+  padding-right: 5px;
+  line-height: 1.5; 
 }
 
 .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    top: 50%;
-    width: 200px;
-    transform: translate(0, -50%);
-    padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  top: 50%;
+  width: 200px;
+  transform: translate(0, -50%);
+  padding: 20px;
 }
 
 @media (max-width: 800pt) {
-    .sidebar {
-        display: none;
-    }
+  .sidebar {
+    lay: none;
+  }
 }
 
 li {
-    text-align: left;
+  text-align: left;
 }
 
 .sidebar a {
@@ -41,82 +41,87 @@ li {
 }
 
 img {
-    width: 100%;
-    display: block;
+  width: 100%;
+  display: block;
 }
 
 video {
-    width: 100%;
-    display: block;
+  width: 100%;
+  display: block;
 }
 
-p, ul {
+p, ul, ol {
   margin-top: 1.5em;
   margin-bottom: 1.5em;
 }
 
+li > ul, li > ol {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 li {
-    padding-bottom: 8px;
+  padding-bottom: 8px;
 }
 
 table, th, td {
-    border: 1px solid var(--hl-dim);
-    border-collapse: collapse;
-    padding: 8px;
+  border: 1px solid var(--hl-dim);
+  border-collapse: collapse;
+  padding: 8px;
 }
 
 hr {
-    color: var(--hl-dim);
+  color: var(--hl-dim);
 }
 
 th, td {
-    text-align: center;
+  text-align: center;
 }
 
 header {
-    padding-top: 5pt;
-    display: flex;
+  padding-top: 5pt;
+  display: flex;
 }
 
 spaced {
-    display: inline;
-    margin-right: 10pt;
+  display: inline;
+  margin-right: 10pt;
 }
 
 summary {
-    cursor: pointer;
-    color: var(--hl);
+  cursor: pointer;
+  color: var(--hl);
 }
 summary:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 a {
-    color: var(--hl);
-    text-decoration: none;
+  color: var(--hl);
+  text-decoration: none;
 }
 
 a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 a:visited {
-    color: var(--hl-dim);
+  color: var(--hl-dim);
 }
 
 .centred-link {
-    padding: 20px;
-    text-align: center;
+  padding: 20px;
+  text-align: center;
 }
 
 .inline-icon {
-    vertical-align: middle;
+  vertical-align: middle;
 }
 
 .title {
-    text-align: center;
+  text-align: center;
 }
 
 circle {
-    fill: var(--fg);
+  fill: var(--fg);
 }
