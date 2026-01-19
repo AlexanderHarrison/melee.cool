@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/main.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hex Times Table Tutor</title>
+</head>
+<style>
+#question {
+    display: inline;
+    font-size: xxx-large;
+}
+#answer {
+    display: inline;
+    font-size: xxx-large;
+}
+#answer_indicator {
+    display: inline;
+    font-size: xxx-large;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-left: 50px;
+}
+p {
+    text-align: center;
+}
+</style>
+<body>
+
+<script src=/header.js></script>
+
+<h1 class=title>Hex Times Table Tutor!</h1>
+<p>
+<input type=radio id=easy name=diff value=easy checked />
+<label for=easy>Easy</label>
+<input type=radio id=medium name=diff value=medium />
+<label for=medium>Medium</label>
+<input type=radio id=hard name=diff value=hard />
+<label for=hard>Hard</label>
+
+<div id=question></div>
+<input type=text id=answer name=answer maxlength=2 size=1 />
+<div id=answer_indicator></div>
+
+<script>
+var num1 = 0;
+var num2 = 0;
+var answer = 0;
+
+const input = document.getElementById("answer");
+const question = document.getElementById("question");
+const answer_indicator = document.getElementById("answer_indicator");
+
+function hex(s) {
+    return s.toString(16).toUpperCase();
+}
+
+function ask_question() {
+    const diff = document.querySelector('input[name="diff"]:checked').value;
+
+    input.value = "";
+    if (diff == "easy")
+        num1 = Math.ceil(Math.random() * 0x3 + 1);
+    else if (diff == "medium")
+        num1 = Math.ceil(Math.random() * 0x8 + 1);
+    else
+        num1 = Math.ceil(Math.random() * 0xE + 1);
+    num2 = Math.ceil(Math.random() * 0xF + 1);
+    answer = num1 * num2;
+    question.textContent = hex(num1) + " * " + hex(num2) + " = ";
+}
+
+function give_answer(response) {
+    const response_num = parseInt(response, 16);
+    if (response_num == answer) {
+        correct_count += 1;
+        answer_indicator.textContent = "Correct!";
+        answer_indicator.style.backgroundColor = "green";
+    } else {
+        incorrect_count += 1;
+        answer_indicator.textContent = hex(num1) + " * " + hex(num2) + " = " + hex(answer);
+        answer_indicator.style.backgroundColor = "darkred";
+    }
+}
+
+// prevent non-hex input
+const regex = /[a-fA-F0-9]+$/;
+input.addEventListener("beforeinput", (event) => {
+  if (event.data != null && !regex.test(event.data))
+    event.preventDefault();
+});
+
+// check if answered
+input.addEventListener("input", (event) => {
+  if (event.data != null && input.value.length == 2) {
+    give_answer(input.value);
+    ask_question();
+  } else {
+    input.value = input.value.toUpperCase();
+  }
+});
+
+// initial question
+ask_question();
+</script>
+
+</body>
+</html>
