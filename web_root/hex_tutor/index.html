@@ -74,11 +74,9 @@ function ask_question() {
 function give_answer(response) {
     const response_num = parseInt(response, 16);
     if (response_num == answer) {
-        correct_count += 1;
         answer_indicator.textContent = "Correct!";
         answer_indicator.style.backgroundColor = "green";
     } else {
-        incorrect_count += 1;
         answer_indicator.textContent = hex(num1) + " * " + hex(num2) + " = " + hex(answer);
         answer_indicator.style.backgroundColor = "darkred";
     }
