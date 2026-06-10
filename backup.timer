@@ -1,8 +1,0 @@
-[Unit]
-Description=melee.cool backup
-
-[Timer]
-OnCalendar=weekly
-AccuracySec=12h
-Persistent=true
-

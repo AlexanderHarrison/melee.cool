@@ -1,0 +1,12 @@
+[Unit]
+Description=Certbot Renewal
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStartPre=systemctl stop server
+ExecStart=certbot renew --noninteractive
+ExecStartPost=systemctl start server
+ExecStopPost=systemctl start server
+StandardOutput=journal
+StandardError=journal
