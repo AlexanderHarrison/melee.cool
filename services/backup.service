@@ -1,0 +1,12 @@
+[Unit]
+Description=melee.cool backup
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/melee.cool/
+ExecStart=/root/melee.cool/backup.sh
+
+[Install]
+WantedBy=timers.target
